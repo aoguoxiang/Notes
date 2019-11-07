@@ -181,7 +181,57 @@ Vue.js使用基于HTML的模板语法，允许开发者声明式地将DOM绑定�
 计算属性默认的方法是getter函数，也可以设置setter函数 
 计算属性是**基于它们的响应式依赖进行缓存的**，只在相关响应式依赖发生改变时它们才会重新求值。这一点同方法截然不同，每次调用方法都将会重新计算求值  
 **侦听属性**适用于数据变化时执行异步操作和或开销较大的操作，但是不要滥用watch，通常用计算属性。  
-参考文档:[适用于侦听器的代码](https://cn.vuejs.org/v2/guide/computed.html)  
+参考文档:[适用于侦听器的代码](https://cn.vuejs.org/v2/guide/computed.html)
+### class的绑定
+对象语法：  
+```html
+<div :class="{active:isActive}"></div>
+```
+上面语法表示active这个class存在与否将取决于数据属性isActive的trunthiness。
+
+数组语法：  
+```html
+<div :class="[activeClass,errorClass]"></div>
+```
+```javascript
+data{
+    activeClass:'active',
+    errorClass:'text-danger'
+}
+```
+数组中也可以用三元表达式
+```html
+<div :class="[isActive ? activeClass : "", errorClass]"></div>
+```
+数组语法中也可以使用对象语法
+```html
+<div :class="[{active:isActive},errorClass]"></div>
+```
+
+用在组件上：  
+当在一个自定义组件上使用class属性，这些class属性将被添加到该组件的根元素上面。这个元素上已经存在的class不会被覆盖
+### style的绑定
+对象语法：  
+```html
+<div :style="{color:activeColor,fontSize:fontSize+'px'}"></div>
+```
+```javascript
+data{
+    activeColor:'red',
+    fontSize:30
+}
+```
+**v-bind:style 的对象语法十分直观——看着非常像 CSS，但其实是一个 JavaScript 对象。CSS 属性名可以用驼峰式 (camelCase) 或短横线分隔 (kebab-case，记得用引号括起来) 来命名：**
+
+数组语法：  
+数组语法可以将多个样式对象应用到同一个元素上：
+```html
+<div :style="[baseStyles,overridingStyles]"></div>
+```
+
+自动添加前缀：  
+当 v-bind:style 使用需要添加[浏览器引擎前缀](https://developer.mozilla.org/zh-CN/docs/Glossary/Vendor_Prefix)的 CSS 属性时，如 transform，Vue.js 会自动侦测并添加相应的前缀。
+
 **未完待续**
 
 # 2019.11.7
