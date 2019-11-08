@@ -255,7 +255,111 @@ PS：*实际上引擎会根据异步任务的类型将它存放在多个队列�
     - 并行执行，流程控制函数也可以并行执行，即所有异步任务同时执行
     - 并行与串行的结合，设置一个门槛，每次最多只能并行执行n个异步任务，这样就避免过分占用系统资源[并行与串行的结合代码示例](https://wangdoc.com/javascript/async/general.html)  
     **一定要仔细研究这个示例代码，熟悉异步的工作方式**
-    
-    
+## 异步的几种解决方案实例
+### setTimeout && setInterval
+setTimeout:  
+1. 用法setTimeout(fn|code,delay[,arg1,arg2,...])，arg1,arg2,等参数会作为回调函数fn的参数传入  
+2. setTimeout函数返回一个整数，作为定时器编号，可以用clearTimeout函数取消  
+ps:***setTimeout和setInterval返回值是连续的，互相依赖的***
+3. setTimeout中的回调操作如果是调用一个对象方法，该方法中的**this会指向全局对象**(这时对象的方法是在全局环境中执行了)  
+例如：
+```javascript
+var x=1;
+var obj={
+    x:2,
+    y:function(){
+        console.log(this.x);
+    }
+//这时输出的x=1,而不是x=2  
+setTimeout(obj.y,1000);
+//解决方案一：用一个函数将obj.y封装
+setTimeout(function(){
+    obj.y();
+},1000);
+//解决方案二：用bind方法绑定obj
+setTimeout(obj.y.bind(obj),1000);
+```
+
+setInterval:  
+1. 与setTimeout的前两点一样  
+2. setInterval指定的delay是包含了每次执行任务本身所消耗的时间，因此实际上，两次执行任务的间隔时间小于delay。例如，setInterval指定每 100ms 执行一次，每次执行需要 5ms，那么第一次执行结束后95毫秒，第二次执行就会开始。如果某次执行耗时特别长，比如需要105毫秒，那么它结束后，下一次执行就会立即开始。
+
+示例代码：利用定时器返回的整数取消当前任务所有的setTimeout
+```javascript
+var gd=setInterval(clearAllSetTimeouts,0);
+function clearAllSetTimeouts(){
+    var id=setTimeout(function(){},0);
+    while(id>0){
+        if(id!==gd){
+            clearTimeout(id);
+        }
+        id--;
+    }
+}
+```
+### setTimeout(f,0)的几个应用场景
+应用场景一：调整事件执行顺序  
+因为事件具有冒泡机制，有时子元素的回调函数会先于父元素的回调函数执行，例如：
+```html
+<input type="button" id="my_button" value="click">
+```
+```javascript
+var input=document.getElementById("my_button");
+input.onclick=function A(){
+//这种写法会导致点击按钮时，先执行<input>的回调函数，即input.value="clickinputbody"而不是期望的input.value="inputbodyinput"
+    input.value+="input";
+//使用setTimeout(f,0) 
+    setTimeout(function B(){
+        input.value+="input";
+    },0);
+}
+document.body.onclick=function(){
+    input.value+="body";
+}
+```
+应用场景二：  
+背景：用户自定义的回调函数，通常在浏览器默认动作之前完成  
+例如：用户在文本框输入文本，keypress事件的回调函数会在浏览器接收文本之前就执行，导致用户只能将之前的字母转为大写(不包含用户当前输入的值)
+```html
+<input type="text" id="input_box">
+```
+```javascript
+document.getElementById("input_box").onkeypress=function(event){
+    //错误的做法
+    this.value=this.value.toUpperCase();
+    //正确的做法
+    //将this的值绑定到变量self上，否则setTimeout的回调函数中的this指向全局对象
+    var self=this;
+    setTimeout(function(){
+        self.value=self.value.toUpperCase();
+    },0);
+}
+```
+应用场景三：  
+setTimeout(f,0)的实际意义是在浏览器最早可执行的空闲阶段执行，所以一些计算量大、耗时长的任务可以分成几个部分放在setTimeout中执行  
+示例代码：为<div>元素添加背景色，要求背景色从#100000到#FFFFFF连续变化
+```html
+<div id="change_background" style="width:100px;height:100px;border:1px solid red"></div>
+```
+```javascript
+var div=document.getElementById("change_background");
+//写法一：javascript代码执行速度快于DOM操作，会造成大量的DOM操作堆积
+for(let i=0x1000000;i<0xFFFFFF;i++){
+    div.style.background="#"+i.toString(16);
+}
+//写法二：使用setTimeout(f,0)分解任务
+var timer=null;
+var i=0x100000;
+function func(){
+    timer=setTimeout(func,0);
+    div.style.background="#"+i.toString(16);
+    if(i==0xFFFFFF){
+        clearTimeout(timer);
+    }
+}                                     
+timer=setTimeout(func,0);
+```
+
+
 
 
