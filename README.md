@@ -89,9 +89,9 @@
 ### 视图层
 一个网页通过DOM的组合和嵌套形成最基本的视图结构。我们把HTML中的DOM与其他部分(例如交互部分)独立开来划分出一个层次，这个层次就叫视图层  
 *Vue的核心库只关心视图层*
-## Virtual DOM
+### Virtual DOM
 可以预先通过JavaScript进行各种计算，把最终的DOM操作计算出来并优化
-## Webpack是什么？为什么要用Webpack？
+### Webpack是什么？为什么要用Webpack？
 Webpack是一个前端打包和构建工具
 
 打包功能：  
@@ -101,7 +101,7 @@ Webpack是一个前端打包和构建工具
 首先大部分浏览器还不支持ES6，这就需要Webpack的Loader自动载入一个转换器将ES6==>老版本JavaScript语言，这个转换器就是Babel
 
 *Webpack不止这一点功能*
-## NPM和Node.js是什么，有什么关系？
+### NPM和Node.js是什么，有什么关系？
 Node.js:  
 我们知道通常情况下，JavaScript的运行环境都是浏览器，因此JavaScript的能力也就局限于浏览器能赋予它的权限了。比如说读写本地系统文件这种操作，一般情况下运行在浏览器中的JavaScript代码是没有这个操作权限的。如果我们想用JavaScript写出一些能够运行在操作系统上的，能够具有像PHP，JAVA之类的编程语言具有的功能的程序该怎么办呢？Node.js就解决了这个问题。Node.js是一个服务端的JavaScript运行环境，通过Node.js可以实现用JavaScript写独立程序。像我们之前提到的Webpack就是Node.js写的，所以作为一个前端开发，即使你不用Node.js写独立程序，也得配一个Node.js运行环境，毕竟很多前端工具都是使用它写的。
 
@@ -114,7 +114,7 @@ NPM:
 至于有的人在按照网上的npm教程配置的时候踩坑了，发现下载速度很慢或者完全下载不了，那是因为我国有着众所周知的原因，网上也有各种解决方法可以解决这个问题，大家多善用搜索引擎。  
 前面提到了Webpack可以安装各种插件来扩展功能，其实也是通过这种方式扩展。
 
-## Vue-CLi是什么？
+### Vue-CLi是什么？
 一个Vue.js脚手架工具，自动帮你生成好项目目录，配置好Webpack，以及各种依赖包的工具  
 [参考昌维-代码之美](https://zhuanlan.zhihu.com/p/25659025)
 
