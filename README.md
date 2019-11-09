@@ -1,5 +1,4 @@
-# 该日记是记录每天遇到一些新的知识点和不熟悉知识点的大概总结
-# 2019.11.2
+# 该日记会不定时的记录遇到一些新的知识点和不熟悉知识点的大概总结
 ## 如何使用html5的canvas元素绘制矩形、三角形、圆等基本图形
 **ctx是canvas创建的2D上下文环境**
 ### 绘制矩形：
@@ -53,7 +52,7 @@
       其他javaScript兼容的MIME-type的类型(该问题还未解决)
 3. 详细Module语法、Module加载实现[参考《ES6标准入门笔记》](http://es6.ruanyifeng.com/)
 
-# 2019.11.3
+------
 ## github上的"New pull request"作用有哪些？
 在github上个人的repository分为两种，一种是自己创建的，另一种是fork别人的；
 - 自己创建的repository在发布后如果有别人fork你的仓库，并且别人有了新的commited，你觉得ok可以Merge，那么需要如下操作：
@@ -84,7 +83,8 @@
 ```
 ## 拓展知识：
 需了解symbol原始类型值和内置symbol值以及Symbol对象
-# 2019.11.5
+
+------
 ## 重新加深对Vue.js框架的认识
 ### 视图层
 一个网页通过DOM的组合和嵌套形成最基本的视图结构。我们把HTML中的DOM与其他部分(例如交互部分)独立开来划分出一个层次，这个层次就叫视图层  
@@ -142,7 +142,7 @@ NPM:
 - 比较运算符的转换逻辑
 [参考《前端面试之道》](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bdc715f6fb9a049c15ea4e0)
 
-# 2019.11.6
+-----
 ## Vue实例  
 当Vue实例被创建时，data对象的所有属性都被加入到Vue的**响应式系统**，当这些属性的值发生改变时，视图就会产生响应匹配更新的值  
 ***值得注意只有当实例被创建时就已经存在data中的属性才是响应的，使用Object.freeze()冻结属性，该属性无法被响应式系统追踪***
@@ -234,7 +234,7 @@ data{
 
 **未完待续**
 
-# 2019.11.7
+-----
 ## 异步
 1. 单线程模型：  
 众所周知，JavaScript只在一个线程上运行，但是JavaScript引擎有多个线程，单个脚本只能在一个线程上运行(称为主线程)，其他线程都是在后台配合。而且JavaScript语言本身并不慢，慢的是I/O操作，比如等待Ajax请求返回结果，因此引入了事件循环机制(Event Loop)  
@@ -253,8 +253,43 @@ PS：*实际上引擎会根据异步任务的类型将它存放在多个队列�
 4. 多个异步操作的流程控制  
     - 串行执行，我们可以编写一个流程控制函数，让它控制异步任务，一个任务完成以后，再执行另一个
     - 并行执行，流程控制函数也可以并行执行，即所有异步任务同时执行
-    - 并行与串行的结合，设置一个门槛，每次最多只能并行执行n个异步任务，这样就避免过分占用系统资源[并行与串行的结合代码示例](https://wangdoc.com/javascript/async/general.html)  
-    **一定要仔细研究这个示例代码，熟悉异步的工作方式**
+    - 并行与串行的结合，设置一个门槛，每次最多只能并行执行n个异步任务，这样就避免过分占用系统资源  
+示例代码：同步任务launcher保证任务队列中只有2个异步任务，异步操作callback负责将items数组的成员以2的倍数添加到results数组中    
+```javascript
+var items=[1,2,3,4,5,6];
+var results=[];
+var running=0;
+var limit=2;
+// 一个异步操作
+function async(agr,callback){
+    console.log("参数为"+agr+",在1s后返回结果");
+    setTimeout(function(){
+        callback(agr*2);
+    },1000);
+}
+function final(){
+    console.log("完成："+results);
+}
+function launcher(){
+    while(running<limit && items.length>0){
+        let item=items.shift();
+        async(item,function(result){
+            results.push(result);
+            running--;
+            if(items.length>0){
+                launcher();
+            }else if(running==0){
+                final();
+            }
+        });
+        running++;
+    }
+}
+launcher();
+```
+[并行与串行的结合代码示例](https://wangdoc.com/javascript/async/general.html)  
+**一定要仔细研究这个示例代码，熟悉异步的工作方式**
+
 ## 异步的几种解决方案实例
 ### setTimeout && setInterval
 setTimeout:  
@@ -359,7 +394,7 @@ function func(){
 }                                     
 timer=setTimeout(func,0);
 ```
-
+[setTimeout的示例代码](./setTimeout-example/myscript.js)
 
 
 
