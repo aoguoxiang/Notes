@@ -95,7 +95,7 @@
 Webpack是一个前端打包和构建工具
 
 打包功能：  
-一个单页面应用程序本身很复杂，需要用到大量素材(例如每一个素材在HTML中一link或script来引入)，这就造成了打开一个页面需要向服务器请求多次，造成TCP的握手和挥手过程时间的浪费。Webpack打包功能就可以将这些素材文件打包成一个文件，只需向服务器请求一次，并且多个资源都是共享一个HTTP请求，所以head部分也是共享的，相当于形成了规模效应，让网页展现更快，用户体验更好。
+一个单页面应用程序本身很复杂，需要用到大量素材(例如每一个素材在HTML中通过link或script来引入)，这就造成了打开一个页面需要向服务器请求多次，造成TCP的握手和挥手过程时间的浪费。Webpack打包功能就可以将这些素材文件打包成一个文件，只需向服务器请求一次，并且多个资源都是共享一个HTTP请求，所以head部分也是共享的，相当于形成了规模效应，让网页展现更快，用户体验更好。
 
 构建功能：  
 首先大部分浏览器还不支持ES6，这就需要Webpack的Loader自动载入一个转换器将ES6==>老版本JavaScript语言，这个转换器就是Babel
@@ -136,7 +136,7 @@ NPM:
 - 在全局执行环境中，不管是否是严格模式，this都指定为全局对象
 - 在函数执行环境中，严格模式默认指定undefined，非严格模式指定为全局对象
 ![判断this指定流程图](https://user-gold-cdn.xitu.io/2018/11/15/16717eaf3383aae8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
-> 如果将this传递给call、bind、或者apply，它将被忽略。不过你仍然可以为调用添加参数，不过第一个参数（thisArg）应该设置为null。bind函数只会生效一次
+> 在箭头函数中如果将this传递给call、bind、或者apply，它将被忽略。不过你仍然可以为调用添加参数，不过第一个参数（thisArg）应该设置为null。bind函数只会生效一次
 ## 不足知识点
 - 对象转为原始数据类型调用内置函数[[ToPrimitive]]的逻辑
 - 比较运算符的转换逻辑
@@ -145,9 +145,9 @@ NPM:
 -----
 ## Vue实例  
 当Vue实例被创建时，data对象的所有属性都被加入到Vue的**响应式系统**，当这些属性的值发生改变时，视图就会产生响应匹配更新的值  
-***值得注意只有当实例被创建时就已经存在data中的属性才是响应的，使用Object.freeze()冻结属性，该属性无法被响应式系统追踪***
+***值得注意只有当实例被创建时就已经存在data中的属性才是响应的，另外使用Object.freeze()冻结属性，该属性无法被响应式系统追踪***
 
-每个实例被创建时都要经过一系列的初始化过程--例如，需要设置数据监听、编译模板、将实例挂载到DOM并在数据变化是更新DOM等。同时在这个过程中也会运行一些叫做**生命周期钩子**的函数，这给了用户在不同阶段添加自己代码的机会  
+每个实例被创建时都要经过一系列的初始化过程--例如，需要设置数据监听、编译模板、将实例挂载到DOM并在数据变化时更新DOM等。同时在这个过程中也会运行一些叫做**生命周期钩子**的函数，这给了用户在不同阶段添加自己代码的机会  
 [钩子生命周期图](https://cn.vuejs.org/images/lifecycle.png)
 ## 模板语法
 Vue.js使用基于HTML的模板语法，允许开发者声明式地将DOM绑定至底层Vue实例的数据。在底层的实现上，Vue将模板编译成虚拟DOM渲染函数。结合响应系统，Vue能够智能地计算出最少需要重新渲染多少组件，并把DOM操作次数减到最少  
@@ -287,10 +287,9 @@ function launcher(){
 }
 launcher();
 ```
-[并行与串行的结合代码示例](https://wangdoc.com/javascript/async/general.html)  
 **一定要仔细研究这个示例代码，熟悉异步的工作方式**
 
-## 异步的几种解决方案实例
+## 异步中定时器的应用
 ### setTimeout && setInterval
 setTimeout:  
 1. 用法setTimeout(fn|code,delay[,arg1,arg2,...])，arg1,arg2,等参数会作为回调函数fn的参数传入  
@@ -395,6 +394,83 @@ function func(){
 timer=setTimeout(func,0);
 ```
 [setTimeout的示例代码](./setTimeout-example/myscript.js)
+---
+## promise对象
+概念：  
+promise对象是异步编程的一种解决方案，比传统的解决方案(回调和事件)更强大、更合理。比如说createAudioFileAsync(audioSettings,successCallback,failureCallback)，负责创建一个音频文件，并且在成功创建后调用successCallback，失败后调用failureCallback；最新的方法是createAudioFileAsync(audioSettings)返回一个promise对象，并且把回调函数附加到promise对象上执行。
 
+优点：  
+- 将异步操作以同步操作的方式表达出来，避免了回调函数的层层嵌套
 
+promise对象特点：  
+- promise对象状态不受外界影响，**只有**异步操作的结果可以决定promise对象的状态。一个promise对象代表一个异步操作，有三种状态pedding,fullfilled,rejected。
+- promise对象状态一旦改变就无法更改，promise对象状态改变只能从pendding到fullfilled，或pendding到rejected；并且在异步操作完成后再添加回调函数也会执行
+
+使用promise时的约定：  
+- 在本轮"事件循环"完成之前，回调函数是不会被调用
+- 通过then()添加的回调函数总是会被调用，即使是在异步操作完成之后添加
+- 通过多次调用then()，可以添加多个回调函数，它们会按照插入顺序一个接一个独立执行
+## Promise构造函数
+Promise构造函数用于生成promise对象实例
+```javascript
+const promise=new Promise((resolve,reject)=>{
+    //some code
+    if(异步操作成功){
+        return resolve(message);
+    }else{
+        return reject(error);
+    }
+})
+```
+说明：  
+- new Promise()会立即执行函数(即(resolve,reject)=>{}会立即执行)
+- resolve()和reject()由js引擎提供，负责改变promise对象状态，并且把**参数**作为结果传递给promise的回调函数
+- 如果resolve()或者reject()的参数是一个promise实例，即一个异步操作(p2)返回另一个异步操作(p1)，则p2的状态由p1决定，见示例
+```javascript
+const p1 = new Promise(function (resolve, reject) {
+  setTimeout(() => reject(new Error('fail')), 3000)
+})
+const p2 = new Promise(function (resolve, reject) {
+  setTimeout(() => resolve(p1), 1000)
+})
+p2.then(result => console.log(result)).catch(error=>console.log(error));
+```
+- 在resolve()和reject()执行完后，还是会继续执行。一般来说，resolve()和reject()执行完后创建promise对象就完成了使命，后面的语句应该放在then()中执行
+为了避免意外，在resolve()和reject()前面加上return即可解决
+## Promise.prototype.then()
+- then()会返回一个**全新的promise实例**
+- then()的回调函数返回的结果会作为下一个then()回调函数的参数
+- then()的回调函数可能也会返回一个**promise实例**(替代了then()返回的promise实例)，那么下一个then()的回调函数会等待该promise实例的状态变化才执行
+```javascript
+Promise.resolve("hello").then(function(post) {
+  //返回一个promise对象
+  return Promise.resolve(post);
+  //由then()返回一个promise对象，将该返回值作为参数传递给下一个回调函数，注意这里不会执行该语句，因为上面语句已经有return
+  return "world";
+}).then(function (comments) {
+  console.log("resolved: ", comments);
+}, function (err){
+  console.log("rejected: ", err);
+});
+```
+## Promise.prototype.catch()
+- catch()是then(null,failureCallback)的简写，也会返回一个**全新promise实例**
+- promise内部抛出的错误未被捕获不会被影响外面的代码执行(promise会吃掉错误),建议在promise后面加一个catch()用于捕获错误
+
+示例：区别setTimeout异步操作和其他异步操作的执行顺序
+```javascript
+const promise = new Promise(function (resolve, reject) {
+  // 异步任务，在脚本主线程任务执行完后再执行
+  setTimeout(function () { throw new Error('test') }, 0);
+  resolve('ok');
+  // 异步任务，在Promise函数执行完后执行
+  Promise.reject("error").catch((error)=>console.log(error));
+  console.log("比error先输出");
+});
+promise.then(function (value) { console.log(value) });
+```
+> 比error先输出  
+> error  
+> ok
+> Error('test')
 
