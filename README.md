@@ -378,7 +378,7 @@ setTimeout(f,0)的实际意义是在浏览器最早可执行的空闲阶段执�
 ```javascript
 var div=document.getElementById("change_background");
 //写法一：javascript代码执行速度快于DOM操作，会造成大量的DOM操作堆积
-for(let i=0x1000000;i<0xFFFFFF;i++){
+for(let i=0x1000000;i<=0xFFFFFF;i++){
     div.style.background="#"+i.toString(16);
 }
 //写法二：使用setTimeout(f,0)分解任务
@@ -386,14 +386,15 @@ var timer=null;
 var i=0x100000;
 function func(){
     timer=setTimeout(func,0);
-    div.style.background="#"+i.toString(16);
-    if(i==0xFFFFFF){
+    if(i++===0xFFFFFF){
         clearTimeout(timer);
     }
+    div.style.background="#"+i.toString(16);
 }                                     
 timer=setTimeout(func,0);
 ```
 [setTimeout的示例代码](./setTimeout-example/myscript.js)
+
 ---
 ## promise对象
 概念：  
@@ -403,8 +404,8 @@ promise对象是异步编程的一种解决方案，比传统的解决方案(回
 - 将异步操作以同步操作的方式表达出来，避免了回调函数的层层嵌套
 
 promise对象特点：  
-- promise对象状态不受外界影响，**只有**异步操作的结果可以决定promise对象的状态。一个promise对象代表一个异步操作，有三种状态pedding,fullfilled,rejected。
-- promise对象状态一旦改变就无法更改，promise对象状态改变只能从pendding到fullfilled，或pendding到rejected；并且在异步操作完成后再添加回调函数也会执行
+- promise对象状态不受外界影响，**只有**异步操作的结果可以决定promise对象的状态。一个promise对象代表一个异步操作，有三种状态pedding,fulfilled,rejected。
+- promise对象状态一旦改变就无法更改，promise对象状态改变只能从pendding到fulfilled，或pendding到rejected；并且在异步操作完成后再添加回调函数也会执行
 
 使用promise时的约定：  
 - 在本轮"事件循环"完成之前，回调函数是不会被调用
@@ -435,7 +436,7 @@ const p2 = new Promise(function (resolve, reject) {
 })
 p2.then(result => console.log(result)).catch(error=>console.log(error));
 ```
-- 在resolve()和reject()执行完后，还是会继续执行。一般来说，resolve()和reject()执行完后创建promise对象就完成了使命，后面的语句应该放在then()中执行
+- 在resolve()和reject()执行完后，代码还是会继续执行。一般来说，resolve()和reject()执行完后创就完成了建promise对象的使命，后面的语句应该放在then()中执行
 为了避免意外，在resolve()和reject()前面加上return即可解决
 ## Promise.prototype.then()
 - then()会返回一个**全新的promise实例**
@@ -471,6 +472,126 @@ promise.then(function (value) { console.log(value) });
 ```
 > 比error先输出  
 > error  
-> ok
+> ok  
 > Error('test')
+## Promise.prototype.fianlly()
+- 不管promise对象最终状态如何都会执行fianlly
+- fianlly()的最终也会返回promise实例，状态由调用fianlly的promise的状态决定
+- fianlly()会返回原来的值，见示例
+```javascript
+var p1=Promise.resolve(2).fianlly(()=>{});
+//[[PromiseStatus]]:"resolved"
+//[[PromiseValue]]:2
+var p2=Promise.reject(3).fianlly(()=>{});
+//[[PromiseStatus]]:"rejected"
+//[[PromiseValue]]:3
+```
+## Promise.all()
+```javascript
+const p1 = new Promise((resolve, reject) => {
+  resolve('hello');
+})
+.then(result => result);
 
+const p2 = new Promise((resolve, reject) => {
+  // throw new Error('报错了');
+  resolve('world');
+})
+.then(result => result);
+
+Promise.all([p1, p2])
+.then(result => console.log(result))
+.catch(e => console.log(e));
+```
+- 接收的参数是一个具有iterator接口的对象(比如数组),用于将多个promise实例包装成一个promise对象
+- 示例中**只有**当P1,p2都为fulfilled，Promise.all()包装的promise的状态才为fulfilled，并将p1,p2实例的结果作为数组传递给then()的回调函数
+- 示例中**只要**当P1,p2中有一个变为rejected，Promise.all()包装的promise的状态就为rejected，并将rejected实例的结果作为参数传递给catch()的回调函数
+## Promise.race()
+- 同Promise.all()类似，都是将多个promise实例包装成一个promise对象
+- 不同的是**只要**p1,p2中有一个状态变化，就将**率先**状态变化的那个实例的结果作为参数传统给then()或catch()的回调参数
+- 从字面理解Promise.all()和Promise.race()的不同,"all意味着全部实例状态，race意味竞赛，谁先变化谁就被传出"
+## Promise.resolve()
+Promise.resolve()根据参数用于快捷生成一个promise对象；参数分为四种情况：
+### 参数为promise实例
+Promise.resolve()会原封不动的返回这个promise实例
+### 参数为thenable对象
+Promise.resolve()会生成一个promise对象(但不会改变它的状态)，然后调用thenable对象的then方法(这时才改变promise对象的状态)
+```javascript
+var thenable={
+    then:function(resolve,reject){
+        resolve('hello');
+    }
+};
+// 生成一个promise对象，然后调用thenable的then方法，状态为resolve，然后返回给常量P
+const p=Promise.resolve(thenable);
+p.then(value=>{console.log(value)}).catch(reason=>{console.log(reason)});
+```
+### 参数不是thenable对象，或者根本不是对象
+Promise.resolve()会生成一个promise对象，并且状态为resolve。Promise.resolve()的参数会同时传统给回调函数
+### 不带参数
+Promise.resolve()直接返回一个resolve状态的promise对象
+## Promise.reject()
+- Promise.reject()比Promise.resolve()方法干脆多了，直接返回一个rejected状态的promise对象
+- Promise.reject()的参数会原封不动的作为后续方法的参数，见示例
+```javascript
+var thenable={
+    then:function(resolve,reject){
+        resolve('hello');
+    }
+};
+// 直接生成rejected状态的promise,不会调用thenable.then()，这一点与Promise.resolve()不同
+const p=Promise.reject(thenable);
+p.catch(reason=>{console.log(reason)});
+```
+
+---
+## 闭包
+概念：  
+闭包是由函数以及创建该函数的词法环境组合而成。**这个环境包含了这个闭包创建时所能访问的所有局部变量**
+
+特点：  
+1. 闭包可以让你从内部函数访问外部函数作用域
+2. 在JS中，函数在每次创建时生成闭包
+3. 闭包是JS语言特有的，因为可以在函数内部声明函数，这是传统编程语言不具有的特性
+4. 每个闭包都是引用自己的词法作用域
+
+闭包面试经典题：
+```javascript
+for(var i=1;i<=5;i++){
+    setTimeout(function(){
+        console.log(i);
+    },i*1000);
+    // 最终输出五次6
+}
+```
+解决方法一：
+```javascript
+for(var i=1;i<=5;i++){
+    (function(j){
+        setTimeout(function timer(){
+            console.log(j);
+        },j*1000);
+    })(i);
+}
+```
+在每次循环时执行立即函数时创建了timer这个闭包，同时j=i，timer闭包引用的词法环境(局部变量j)将每次循环的i值固定了
+
+解决方法二：
+```javascript
+for(var i=1;i<=5;i++){
+    setTimeout(function timer(j){
+        console.log(j);
+    },j*1000,i);
+}
+```
+每次循环的i会当做timer()的参数传入(这里的timer并不是闭包)，因此最终执行timer()时并没有从全局作用域获取i
+
+解决方法三：
+```javascript
+for(let i=1;i<=5;i++){
+    setTimeout(function timer(){
+        console.log(i);
+    },i*1000);
+}
+```
+使用ES6引入的let关键词，它是块级作用域
