@@ -404,8 +404,8 @@ promise对象是异步编程的一种解决方案，比传统的解决方案(回
 - 将异步操作以同步操作的方式表达出来，避免了回调函数的层层嵌套
 
 promise对象特点：  
-- promise对象状态不受外界影响，**只有**异步操作的结果可以决定promise对象的状态。一个promise对象代表一个异步操作，有三种状态pedding,fulfilled,rejected。
-- promise对象状态一旦改变就无法更改，promise对象状态改变只能从pendding到fulfilled，或pendding到rejected；并且在异步操作完成后再添加回调函数也会执行
+- promise对象状态不受外界影响，**只有**异步操作的结果可以决定promise对象的状态。一个promise对象代表一个异步操作，有三种状态pending,fulfilled,rejected。
+- promise对象状态一旦改变就无法更改，promise对象状态改变只能从pending到fulfilled，或pending到rejected；并且在异步操作完成后再添加回调函数也会执行
 
 使用promise时的约定：  
 - 在本轮"事件循环"完成之前，回调函数是不会被调用
@@ -424,7 +424,7 @@ const promise=new Promise((resolve,reject)=>{
 })
 ```
 说明：  
-- new Promise()会立即执行函数(即(resolve,reject)=>{}会立即执行)
+- new Promise()中的executor函数会立即执行(即(resolve,reject)=>{})
 - resolve()和reject()由js引擎提供，负责改变promise对象状态，并且把**参数**作为结果传递给promise的回调函数
 - 如果resolve()或者reject()的参数是一个promise实例，即一个异步操作(p2)返回另一个异步操作(p1)，则p2的状态由p1决定，见示例
 ```javascript
@@ -434,6 +434,7 @@ const p1 = new Promise(function (resolve, reject) {
 const p2 = new Promise(function (resolve, reject) {
   setTimeout(() => resolve(p1), 1000)
 })
+// 在1s后p2变为resolve状态，但由于返回p1，又等2s后p1为rejected，因此p2状态也为rejected；实质p2后面的then(),catch()是处理p1返回的结果
 p2.then(result => console.log(result)).catch(error=>console.log(error));
 ```
 - 在resolve()和reject()执行完后，代码还是会继续执行。一般来说，resolve()和reject()执行完后创就完成了建promise对象的使命，后面的语句应该放在then()中执行
@@ -444,7 +445,7 @@ p2.then(result => console.log(result)).catch(error=>console.log(error));
 - then()的回调函数可能也会返回一个**promise实例**(替代了then()返回的promise实例)，那么下一个then()的回调函数会等待该promise实例的状态变化才执行
 ```javascript
 Promise.resolve("hello").then(function(post) {
-  //返回一个promise对象
+  //返回一个promise对象，替代了then()返回的promise对象
   return Promise.resolve(post);
   //由then()返回一个promise对象，将该返回值作为参数传递给下一个回调函数，注意这里不会执行该语句，因为上面语句已经有return
   return "world";
@@ -456,15 +457,15 @@ Promise.resolve("hello").then(function(post) {
 ```
 ## Promise.prototype.catch()
 - catch()是then(null,failureCallback)的简写，也会返回一个**全新promise实例**
-- promise内部抛出的错误未被捕获不会被影响外面的代码执行(promise会吃掉错误),建议在promise后面加一个catch()用于捕获错误
+- promise内部抛出的错误未被捕获不会影响外面的代码执行(promise会吃掉错误),建议在promise后面加一个catch()用于捕获错误
 
 示例：区别setTimeout异步操作和其他异步操作的执行顺序
 ```javascript
 const promise = new Promise(function (resolve, reject) {
-  // 异步任务，在脚本主线程任务执行完后再执行
+  // 在脚本主线程任务执行完后再执行，即在“下一轮事件循环执行”
   setTimeout(function () { throw new Error('test') }, 0);
   resolve('ok');
-  // 异步任务，在Promise函数执行完后执行
+  // 在Promise函数执行完后执行，即在“本轮事件循环执行”
   Promise.reject("error").catch((error)=>console.log(error));
   console.log("比error先输出");
 });
@@ -474,17 +475,30 @@ promise.then(function (value) { console.log(value) });
 > error  
 > ok  
 > Error('test')
-## Promise.prototype.fianlly()
-- 不管promise对象最终状态如何都会执行fianlly
-- fianlly()的最终也会返回promise实例，状态由调用fianlly的promise的状态决定
-- fianlly()会返回原来的值，见示例
+## Promise.prototype.finally()
+- 不管promise对象最终状态如何都会执行finally
+- finally()的最终也会返回promise实例，状态由调用finally的promise的状态决定
+- finally()会返回原来的值，见示例
 ```javascript
-var p1=Promise.resolve(2).fianlly(()=>{});
+var p1=Promise.resolve(2).finally(()=>{});
+// 控制台输出的p1
 //[[PromiseStatus]]:"resolved"
 //[[PromiseValue]]:2
-var p2=Promise.reject(3).fianlly(()=>{});
+var p2=Promise.reject(3).finally(()=>{});
+// 控制台输出的p2
 //[[PromiseStatus]]:"rejected"
 //[[PromiseValue]]:3
+```
+Promise.prototype.finally的实现：
+```javascript
+Promise.prototype.finally=function(callback){
+    let p=this.constructor;
+    return this.then(function(value){
+        return p.resolve(callback()).then(()=>value);
+    },function(error){
+        return p.resolve(callback()).then(()=>{throw error});
+    })
+}
 ```
 ## Promise.all()
 ```javascript
@@ -558,12 +572,13 @@ p.catch(reason=>{console.log(reason)});
 闭包面试经典题：
 ```javascript
 for(var i=1;i<=5;i++){
-    setTimeout(function(){
+    setTimeout(function timer(){
         console.log(i);
     },i*1000);
     // 最终输出五次6
 }
 ```
+原因：由于var变量具有提升作用，所以i是一个全局变量，timer()执行时是从全局环境中获取i的值
 解决方法一：
 ```javascript
 for(var i=1;i<=5;i++){
@@ -574,7 +589,7 @@ for(var i=1;i<=5;i++){
     })(i);
 }
 ```
-在每次循环时执行立即函数时创建了timer这个闭包，同时j=i，timer闭包引用的词法环境(局部变量j)将每次循环的i值固定了
+在立即执行函数中创建了timer这个闭包，timer闭包引用的词法环境是局部变量j，而在每次循环时j=i
 
 解决方法二：
 ```javascript
@@ -584,7 +599,7 @@ for(var i=1;i<=5;i++){
     },j*1000,i);
 }
 ```
-每次循环的i会当做timer()的参数传入(这里的timer并不是闭包)，因此最终执行timer()时并没有从全局作用域获取i
+每次循环的i会当做timer()的参数传入(timer还是个闭包，只是没有获取外部环境的变量，获取的是它函数内部自己的变量)
 
 解决方法三：
 ```javascript
@@ -594,4 +609,108 @@ for(let i=1;i<=5;i++){
     },i*1000);
 }
 ```
-使用ES6引入的let关键词，它是块级作用域
+使用ES6引入的let关键词，它是块级作用域，每次创建timer闭包时引用的都是独立的词法环境  
+[在循环中创建闭包常见错误](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Closures)
+
+性能考量：  
+> 如果不是某些特定任务需要使用闭包，在其它函数中创建函数是不明智的，因为闭包在处理速度和内存消耗方面对脚本性能具有负面影响。
+
+---
+## AJAX(Asynchronous JavaScript And XML)
+概念：  
+> AJAX是异步的JavaScript和XML（Asynchronous JavaScript And XML）。简单点说，就是使用 XMLHttpRequest 对象与服务器通信。 它可以使用JSON，XML，HTML和text文本等格式发送和接收数据
+
+特性：  
+- 在不重新加载页面的情况下发送请求给服务器
+- 可以接受并使用从服务器返回来的数据
+
+Step 1-怎样发送http请求：  
+```javascript
+// 创建一个请求对象
+var httpRequest=new XMLHttpRequest();
+// 设置请求的方法，url,是否异步(可选，默认为true，异步)
+httpRequest.open('GET',url);
+// 发送请求,send()的参数可以是任何你想发送给服务器的内容，如果是 POST 请求的话。发送表单数据时应该用服务器可以解析的格式
+httpRequest.send()
+```
+[发送POST请求的方法](https://developer.mozilla.org/zh-CN/docs/Web/Guide/AJAX/Getting_Started)
+
+Step 2-处理服务器响应：  
+```javascript
+// 监听onreadystatechange事件
+httpRequest.onreadystatechange=handler;
+// 检查请求状态(readyStatus)和服务器响应码
+function handler(){
+    // 表示服务器接收到请求并且成功处理请求，已经做好响应准备
+    if(httpRequest.readyStatus===XMLHttpRequest.DOME){
+        // 响应码200表示服务器返回数据成功
+        if(httpRequest.status===200){
+            // 接收并处理服务器返回的数据
+            // 服务器以文本的形式返回
+            httpRequest.responseText;
+            // 服务器以XMLDocument对象返回，之后可以使用JavaScript处理
+            httpRequest.responseXML;
+        }
+    }
+}
+```
+readyStatus状态值如下：  
+- 0 (未初始化) or (请求还未初始化)
+- 1 (正在加载) or (已建立服务器链接)
+- 2 (加载成功) or (请求已接受)
+- 3 (交互) or (正在处理请求)
+- 4 (完成) or (请求已完成并且响应已准备好)  
+注意：**如果open()方法第三个参数设置为false，表示以同步的方式发送请求，就不需要监听onreadystatechange,但不推荐这样做**  
+[参考示例](https://developer.mozilla.org/zh-CN/docs/Web/Guide/AJAX/Getting_Started)  
+[了解XMLHttpRequest API](https://developer.mozilla.org/zh-CN/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest)
+
+## 浅拷贝&&深拷贝
+- 在JS中对于原始数据类型拷贝的是原始值，而对象拷贝的是引用值，所以拷贝对象时容易使两个对象互相影响
+- 对象分浅拷贝和深拷贝，对象的浅拷贝只复制一层，对象的深拷贝复制多层
+- 浅拷贝和深拷贝只针对Object和Array这种复杂的对象
+- Object.assign()和扩展运算符(...)适合复制只有一层的对象
+- JSON.parse(JSON.stringify())适合复制多层嵌套的对象，但也有其局限
+    - 会忽略 undefined
+    - 会忽略 symbol
+    - 不能序列化函数
+    - 不能解决循环引用的对象
+
+### 浅拷贝应用
+解法方法一：  
+使用Object.assign(target,...source)
+```javascript
+var obj1={x:1};
+// Object.assign()拷贝的是source对象中可枚举属性的属性值
+// 需要注意如果source对象属性的属性值是对象，那么拷贝到target对象是该对象的引用
+var obj2=Object.assign({},obj1);
+obj1.x=2;
+// obj2.x=1
+obj2.x;
+```
+
+解决方法二：
+```javascript
+var obj1={x:1};
+// 使用扩展运算符
+var obj2={...obj1};
+obj1.x=2;
+// obj2.x=1
+obj2.x;
+```
+### 深拷贝应用
+```javascript
+let obj = {
+  a: 1,
+  b: {
+    c: 2,
+    d: 3,
+  },
+}
+obj.b.c={a:1};
+obj.b.c.a={x:1};
+let newObj = JSON.parse(JSON.stringify(obj));
+obj.b.c.a.x=2;
+// 输出1
+newObj.b.c.a.x;
+```
+[参考深拷贝](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bed40d951882545f73004f6)
