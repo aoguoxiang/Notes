@@ -126,6 +126,14 @@ NPM:
 3. 转为number
 > 注意图中有一个错误，Boolean 转字符串这行结果我指的是 true 转字符串的例子，不是说 Boolean、函数、Symblo 转字符串都是 `true`
 ![类型转换表格](https://user-gold-cdn.xitu.io/2018/11/15/16716dec14421e47?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+## == vs ===
+面试经典题[] == ![]  
+"=="在比较时涉及到类型转换，"==="不会涉及类型转换；在使用"=="时要注意操作数的类型：  
+1. 如果都是原始类型(string/number/boolean，除去特殊值null/undefined/NaN)，两者都转为数值进行判断；
+2. 特殊值的话，null/undefied/NaN 和任何值(不包括自身) == 都为 false；null 和 undefined == 为 true，分别与自身 == 也为true；NaN 与自身 == 为 false；
+3. 原始类型和引用类型进行比较，原始类型是数值引用类型转为数值，原始类型是字符串引用类型转为字符串，原始类型是布尔值两者都转为数值；
+4. 引用类型和引用类型进行比较，比较的是内存地址。  
+回到[] == ![]上面这个问题。"!"运算符优先级大于"=="，实际比较的是 []==false，根据上面的规则3，两个操作数都将转换为数值即0==0，所以输出true
 ## 四则运算符
 - “+”加法运算符
     1. 如果有一方为字符串，则另一方会转为字符串
@@ -141,98 +149,6 @@ NPM:
 - 对象转为原始数据类型调用内置函数[[ToPrimitive]]的逻辑
 - 比较运算符的转换逻辑
 [参考《前端面试之道》](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bdc715f6fb9a049c15ea4e0)
-
------
-## Vue实例  
-当Vue实例被创建时，data对象的所有属性都被加入到Vue的**响应式系统**，当这些属性的值发生改变时，视图就会产生响应匹配更新的值  
-***值得注意只有当实例被创建时就已经存在data中的属性才是响应的，另外使用Object.freeze()冻结属性，该属性无法被响应式系统追踪***
-
-每个实例被创建时都要经过一系列的初始化过程--例如，需要设置数据监听、编译模板、将实例挂载到DOM并在数据变化时更新DOM等。同时在这个过程中也会运行一些叫做**生命周期钩子**的函数，这给了用户在不同阶段添加自己代码的机会  
-[钩子生命周期图](https://cn.vuejs.org/images/lifecycle.png)
-## 模板语法
-Vue.js使用基于HTML的模板语法，允许开发者声明式地将DOM绑定至底层Vue实例的数据。在底层的实现上，Vue将模板编译成虚拟DOM渲染函数。结合响应系统，Vue能够智能地计算出最少需要重新渲染多少组件，并把DOM操作次数减到最少  
-*如果你熟悉虚拟DOM并且偏爱JavaScript的原始力量，也可以不用模板，直接写渲染函数，使用可选的JSX语法*
-
-{{}}插值会把数据渲染成普通文本而不是HTML，如果你要渲染成HTML就使用v-html指令  
-{{}}语法不能作用在HTML特性上，要绑定特性需要用到Vue的指令
-
-指令特性的值预期是**单个JavaScript表达式**(v-for除外)，它的作用是当表达式的值改变时，将其产生的连带影响响应式地作用于DOM  
-从Vue 2.6.0开始可以为指令使用动态参数  
-- 对动态参数的值的约束  
-动态参数预期会求出一个字符串，异常情况下值为null。这个特殊的null值可以显性地用于移除绑定。任何其他非字符串类型的值都会触发一个警告
-- 对动态参数表达式的约束  
-如果表达式中有空格和引号字符，将会触发一个警告，例如：  
-```html
-<!-- 这会触发一个编译警告 -->
-<a v-bind:['foo' +bar]='value'>....</a>
-```
-变通方法是使用没有空格或引号的表达式，或用计算属性替代这种复杂表达式  
-***在HTML文件里直接撰写模板，要避免使用大写字符命名键名，因为浏览器会被attribute名全部强制转为小写***  
-```html
-<!--
-在DOM中使用模板时这段代码会被转为 'v-bind:[someattr]'
-除非在实例中有一个名为"someattr"的property，否则代码不会工作。
--->
-<a v-bind:[someAttr]="value">...</a>
-```
-## 计算属性和侦听器
-### 计算属性：
-概念：用函数的方式定义，像普通属性一样使用  
-计算属性默认的方法是getter函数，也可以设置setter函数 
-计算属性是**基于它们的响应式依赖进行缓存的**，只在相关响应式依赖发生改变时它们才会重新求值。这一点同方法截然不同，每次调用方法都将会重新计算求值  
-**侦听属性**适用于数据变化时执行异步操作和或开销较大的操作，但是不要滥用watch，通常用计算属性。  
-参考文档:[适用于侦听器的代码](https://cn.vuejs.org/v2/guide/computed.html)
-### class的绑定
-对象语法：  
-```html
-<div :class="{active:isActive}"></div>
-```
-上面语法表示active这个class存在与否将取决于数据属性isActive的trunthiness。
-
-数组语法：  
-```html
-<div :class="[activeClass,errorClass]"></div>
-```
-```javascript
-data{
-    activeClass:'active',
-    errorClass:'text-danger'
-}
-```
-数组中也可以用三元表达式
-```html
-<div :class="[isActive ? activeClass : "", errorClass]"></div>
-```
-数组语法中也可以使用对象语法
-```html
-<div :class="[{active:isActive},errorClass]"></div>
-```
-
-用在组件上：  
-当在一个自定义组件上使用class属性，这些class属性将被添加到该组件的根元素上面。这个元素上已经存在的class不会被覆盖
-### style的绑定
-对象语法：  
-```html
-<div :style="{color:activeColor,fontSize:fontSize+'px'}"></div>
-```
-```javascript
-data{
-    activeColor:'red',
-    fontSize:30
-}
-```
-**v-bind:style 的对象语法十分直观——看着非常像 CSS，但其实是一个 JavaScript 对象。CSS 属性名可以用驼峰式 (camelCase) 或短横线分隔 (kebab-case，记得用引号括起来) 来命名：**
-
-数组语法：  
-数组语法可以将多个样式对象应用到同一个元素上：
-```html
-<div :style="[baseStyles,overridingStyles]"></div>
-```
-
-自动添加前缀：  
-当 v-bind:style 使用需要添加[浏览器引擎前缀](https://developer.mozilla.org/zh-CN/docs/Glossary/Vendor_Prefix)的 CSS 属性时，如 transform，Vue.js 会自动侦测并添加相应的前缀。
-
-**未完待续**
 
 -----
 ## 异步
@@ -578,7 +494,7 @@ for(var i=1;i<=5;i++){
     // 最终输出五次6
 }
 ```
-原因：由于var变量具有提升作用，所以i是一个全局变量，timer()执行时是从全局环境中获取i的值
+原因：由于var变量具有提升作用，所以i是一个全局变量，timer()执行时是从全局环境中获取i的值  
 解决方法一：
 ```javascript
 for(var i=1;i<=5;i++){
@@ -628,17 +544,17 @@ Step 1-怎样发送http请求：
 ```javascript
 // 创建一个请求对象
 var httpRequest=new XMLHttpRequest();
+// 监听onreadystatechange事件
+httpRequest.onreadystatechange=handler;
 // 设置请求的方法，url,是否异步(可选，默认为true，异步)
 httpRequest.open('GET',url);
 // 发送请求,send()的参数可以是任何你想发送给服务器的内容，如果是 POST 请求的话。发送表单数据时应该用服务器可以解析的格式
 httpRequest.send()
 ```
-[发送POST请求的方法](https://developer.mozilla.org/zh-CN/docs/Web/Guide/AJAX/Getting_Started)
+[发送POST请求的示例](https://developer.mozilla.org/zh-CN/docs/Web/Guide/AJAX/Getting_Started)
 
 Step 2-处理服务器响应：  
 ```javascript
-// 监听onreadystatechange事件
-httpRequest.onreadystatechange=handler;
 // 检查请求状态(readyStatus)和服务器响应码
 function handler(){
     // 表示服务器接收到请求并且成功处理请求，已经做好响应准备
@@ -664,12 +580,13 @@ readyStatus状态值如下：
 [参考示例](https://developer.mozilla.org/zh-CN/docs/Web/Guide/AJAX/Getting_Started)  
 [了解XMLHttpRequest API](https://developer.mozilla.org/zh-CN/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest)
 
+---
 ## 浅拷贝&&深拷贝
-- 在JS中对于原始数据类型拷贝的是原始值，而对象拷贝的是引用值，所以拷贝对象时容易使两个对象互相影响
+- 在JS中对于原始数据类型拷贝的是原始值，而对象拷贝的是引用值，所以拷贝对象容易使两个对象互相影响
 - 对象分浅拷贝和深拷贝，对象的浅拷贝只复制一层，对象的深拷贝复制多层
 - 浅拷贝和深拷贝只针对Object和Array这种复杂的对象
-- Object.assign()和扩展运算符(...)适合复制只有一层的对象
-- JSON.parse(JSON.stringify())适合复制多层嵌套的对象，但也有其局限
+- Object.assign()和扩展运算符(...)适合浅拷贝对象
+- JSON.parse(JSON.stringify())适合深拷贝对象，但也有其局限
     - 会忽略 undefined
     - 会忽略 symbol
     - 不能序列化函数
@@ -714,3 +631,54 @@ obj.b.c.a.x=2;
 newObj.b.c.a.x;
 ```
 [参考深拷贝](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bed40d951882545f73004f6)
+
+---
+## 原型&&原型链
+- Object.prototype和Function.prototype是JS引擎创建的两个特殊对象
+- 所有实例对象都是由构造器生成，它的__proto__属性隐式指向原型对象，并通过__proto__形成原型链
+- 函数比较特殊，即有__proto__属性，也有prototype属性；__proto__指向Function.prototype；prototype属性指向该函数所生成的实例对象的原型对象
+- Function.prototype._proto__ ===Object.prototype
+- Object.prototype是所有对象的终点  
+![原型链](https://camo.githubusercontent.com/8c32afe801835586c6ee59ef570fe2b322eadd6e/68747470733a2f2f79636b2d313235343236333432322e636f732e61702d7368616e676861692e6d7971636c6f75642e636f6d2f626c6f672f323031392d30362d30312d3033333932352e706e67)
+
+---
+## 变量提升(var,let,const)
+提升：  
+是一种将变量和函数的声明移到函数作用域(如果不在任何函数内的话就是全局作用域)最顶部的机制。  
+注意：**从概念的字面意义上说，“变量提升”意味着变量和函数的声明会在物理层面移动到代码的最前面，但这么说并不准确。实际上变量和函数声明在代码里的位置是不会动的，而是在编译阶段被放入内存中**
+
+暂时性死区：  
+在声明变量之前使用变量，JS会抛出异常；let和const存在暂时性死区，var不存在暂时性死区  
+注意：**let和const也存在提升，只是因为暂时性死区的原因导致不能在声明它之前使用**
+
+- 函数提升优先于变量提升，**函数提升会把整个函数挪到作用域顶部，变量提升只会把声明挪到作用域顶部**
+- var 存在提升，我们能在声明之前使用。let、const 因为暂时性死区的原因，不能在声明前使用
+- var 在全局作用域下声明变量会导致变量挂载在 window 上，其他两者不会
+- let 和 const 作用基本一致，但是后者声明的变量不能再次赋值并且在声明时就要初始化
+- JS中鼓励先声明再使用，符合逻辑和代码维护  
+```javascript
+var a = 1
+let b = 1
+const c = 1
+// 在全局作用域中声明let,const变量不会挂载到window对象上，这一点和var不同
+console.log(window.b) // undefined
+console.log(window.c) // undefined
+function test(){
+// 这里的变量a在编译阶段虽然存在提升但是因为“暂时性死区”原因不能在声明之前使用
+// 这里的变量a是块级作用域，和全局作用域的变量a互不影响，因此可以使用相同的变量名
+  console.log(a)
+  let a
+}
+test()
+```
+JS中存在提升的原因：为了解决函数间互相调用的情况，见示例：  
+```javascript
+// 如果不存在提升，那么test2()将永远无法执行
+function test1() {
+    test2()
+}
+function test2() {
+    test1()
+}
+test1()
+```
