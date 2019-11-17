@@ -16,7 +16,7 @@
 ```javascript
       ctx.fillStyle='#fff';
       ctx.beginPath();
-      //startAngle圆弧的起始点，以x轴开始计算，单位为弧度；显然endAngle为圆弧的终止点；anticlockwise代表绘制圆弧的方向，默认值false，顺时针方向
+      //startAngle圆弧的起始点，以x轴开始计算，单位为弧度；endAngle为圆弧的终止点；anticlockwise代表绘制圆弧的方向，默认值false，顺时针方向
       ctx.arc(x,y,r,starAngle,endAngle,anticlockwise);
       //填充圆，填充颜色为ctx.fillStyle
       ctx.fill();
@@ -44,13 +44,144 @@
 - tan(),cos(),sin()三角函数的概念
 ## 区别querySelector()和getElementsByClassName()
 - document.querySelector(selector)是返回选择器匹配的第一个元素，并且selector是选择器字符串
-- document.getElementsByClassName(string)返回一个NodeList,里面包含所匹配的元素，string为class的属性值
-## Module的语法、Module加载的实现
-1. 如果你尝试用本地文件加载HTML 文件 (i.e. with a file:// URL), 由于JavaScript 模块的安全性要求，
-      你会遇到CORS 错误。你需要通过服务器来做你的测试
-2. Moudle的扩展名为.mjs方便与传统.js文件的区别，为了服务器能正确识别.mjs的扩展名，需要以MIME-type为javascript/esm加载或者
-      其他javaScript兼容的MIME-type的类型(该问题还未解决)
+- document.getElementsByClassName(string)返回一个NodeList里面包含所匹配的元素，string为class的属性值
+## Module的语法&&Module加载的实现
+### export语法
+- export规定的对外接口与内部变量是一一对应关系，所以要加"{}"
+- export规定的对外接口与内部变量是动态绑定，意味着可以获取内部变量的实时值，这一点和CommonJS规范完全不同
+- export可以出现在模块顶层任何位置，不能出现在块级作用域内(因为ES6模块是静态编译)
+- export可以导出变量、对象、函数、class等
+普通：  
+```javascript
+// 写法一
+export var m=1
+// 写法二，推荐的写法
+export {firstName,lastName,age}
+// 报错，输出的不是接口，而是值
+var f=1
+export f
+```
+改名接口：  
+```javascript
+// 在其他模块导入该模块时的接口是myName和myAge，其实并不推荐在export命令中改名接口
+export {firstName as myName,age as myAge}
+```
+### import语法
+- import导入的接口是只读，不允许在脚本中改写接口
+- import命令的from指定模块文件的位置，可以是相对路径或者绝对路径。如果只有模块名，则需要配置文件告诉JS引擎模块文件的位置
+- import命令具有提升效果，会提升到模块的头部，首先执行，这种行为本质是import在编译阶段执行的，所以不能在import命令中使用表达式和变量这种在执行时才能   得到结果的语法结构
+- import命令会执行所加载的模块，如果一个模块被加载多次，实际只执行一次。可以有(import "./profile.mjs")的写法，表示仅仅执行profile.mjs模块，但不输入任何值
+- import整体加载是将所加载模块的接口全部加载到一个对象上，该对象能进行静态分析，不允许运行时改变
+- 模块的整体加载会忽略模块的默认接口
+普通：  
+```javascript
+// 同export命令一样，一定要加"{}"，导入的变量必须与模块规定的对外接口一致
+import {firstName,lastName,age} from "./profile.mjs"
+```
+改名接口：  
+```javascript
+// 推荐通过import改名接口，其优势在于可以更改第三方模块的接口
+import {firstName as myName,age as myAge} from "./profile.mjs"
+```
+模块的整体加载：  
+```javascript
+// 将profile.mjs模块的接口全部加载到circle这个对象上
+import * as circle from "./profile.mjs"
+// 报错，circle能静态分析，不允许再添加其它属性
+circle.foo="hello"
+```
+### export default语法
+- 一个模块只能有一个默认接口
+- export default后面不能声明变量，因为本质上default就是一个变量
+- import命令导入默认接口时不需要"{}"，可以使用任意名称指定默认接口
+```javascript
+// default.mjs模块的默认接口
+// 等同于export {a as default}
+export default a
+// 这种写法也可以，因为本质上是把值赋给变量default
+export default 13
+
+// new.mjs模块加载default.mjs模块的默认接口
+// 等同于 import {default as newA} from "./default.mjs"
+import newA from "./default.mjs"
+```
+### import和export的复合写法
+- import和export的复合写法实际上是转发接口，当前的模块并不能直接使用被导入的接口
+- 复合写法的export *命令会忽略默认接口
+```javascript
+export {foo,bar} from "my_module.mjs"
+// 可以简单理解为以下写法
+// 需要注意的是foo,bar并没有直接导入当前模块
+import {foo,bar} from "my_module.mjs"
+export {foo,bar} 
+```
+复合写法的接口改名，整体输出：  
+```javascript
+// 接口改名
+export {foo as myFoo} from "my_module.mjs"
+// 整体输出，忽略my_module.mjs默认接口
+export * from "my_module.mjs"
+// 默认接口写法
+export {default} from "my_module.mjs"
+// 将具名接口改为默认接口
+export {definite as default} from "my_module.mjs"
+// 等同于
+import {definite} from "my_module.mjs"
+export default definite
+
+// 将默认接口改为具名接口
+export {default as definite} from "my_module.mjs"
+```
+以下三种写法没有对应的复合写法：  
+```javascript
+import * as someIdentifier from "someModule.mjs"
+import someIdentifier from "someModule.mjs"
+import someIdentifier,{nameIdentifier} from "someModule.mjs"
+```
+### import()
+- import()类似CommonJS中的require()，都是运行时加载模块，区别在于前者是**异步加载**，后者是同步加载
+- import()的参数指定所加载模块的位置，import()返回一个promise对象
+- import()加载模块成功之后，这个模块会当做一个对象(包含所有的对外接口,包括默认接口)作为then()的参数
+- import()可以运行在非模块脚本中，而import命令只能运行在模块脚本中
+```javascript
+// canvas.js模块的对外接口
+export { create, createReportList};
+export default 24;
+// main.js加载canvas.js模块
+// import()会立即返回一个promise<pending>，加载模块是异步执行的
+var canvas=import('./modules/canvas.js');
+// 因为import()是异步加载模块，所以输出的是一个pending状态的promise
+console.log(canvas);
+// 再次强调，setTimeout是在"下一轮事件循环执行"
+setTimeout(function(){
+        console.log(canvas);
+},0);
+// then()是在本轮事件循环完后执行，所以比setTimeout先执行
+var promise=import('./modules/canvas.js').then(module=>{console.log(module)});
+```
+注意点：  
+```javascript
+// then()的参数是一个模块对象，所以可以使用对象的解构赋值的语法输出接口
+import('./modules/canvas.js').then(({create, createReportList}) => {/*执行的代码*/});
+// 如果canvas.js模块有默认接口，可以使用default参数直接获得
+import('./modules/canvas.js').then(module => {console.log(module.default)});
+// 上一条语句也可以使用具名方式
+import('./modules/canvas.js').then({default:theDefault}=> {console.log(theDefault)});
+// 如果要同时加载多个模块，可以使用Promise.all()
+Promise.all([
+  import('./module1.js'),
+  import('./module2.js'),
+  import('./module3.js'),
+])
+.then(([module1, module2, module3]) => {
+   ···
+});
+```
+### Module的加载实现
+1. 如果你尝试用本地文件加载HTML 文件 (i.e. with a file:// URL), 由于JavaScript 模块的安全性要求，你会遇到CORS 错误。你需要通过服务器来做你的测试
+2. Moudle的扩展名为.mjs方便与传统.js文件的区别，为了服务器能正确识别.mjs的扩展名，需要以MIME-type为javascript/esm加载或者其他javaScript兼容的MIME-type的类型(该问题还未解决)
 3. 详细Module语法、Module加载实现[参考《ES6标准入门笔记》](http://es6.ruanyifeng.com/)
+**未完待续**
 
 ------
 ## github上的"New pull request"作用有哪些？
@@ -85,40 +216,6 @@
 需了解symbol原始类型值和内置symbol值以及Symbol对象
 
 ------
-## 重新加深对Vue.js框架的认识
-### 视图层
-一个网页通过DOM的组合和嵌套形成最基本的视图结构。我们把HTML中的DOM与其他部分(例如交互部分)独立开来划分出一个层次，这个层次就叫视图层  
-*Vue的核心库只关心视图层*
-### Virtual DOM
-可以预先通过JavaScript进行各种计算，把最终的DOM操作计算出来并优化
-### Webpack是什么？为什么要用Webpack？
-Webpack是一个前端打包和构建工具
-
-打包功能：  
-一个单页面应用程序本身很复杂，需要用到大量素材(例如每一个素材在HTML中通过link或script来引入)，这就造成了打开一个页面需要向服务器请求多次，造成TCP的握手和挥手过程时间的浪费。Webpack打包功能就可以将这些素材文件打包成一个文件，只需向服务器请求一次，并且多个资源都是共享一个HTTP请求，所以head部分也是共享的，相当于形成了规模效应，让网页展现更快，用户体验更好。
-
-构建功能：  
-首先大部分浏览器还不支持ES6，这就需要Webpack的Loader自动载入一个转换器将ES6==>老版本JavaScript语言，这个转换器就是Babel
-
-*Webpack不止这一点功能*
-### NPM和Node.js是什么，有什么关系？
-Node.js:  
-我们知道通常情况下，JavaScript的运行环境都是浏览器，因此JavaScript的能力也就局限于浏览器能赋予它的权限了。比如说读写本地系统文件这种操作，一般情况下运行在浏览器中的JavaScript代码是没有这个操作权限的。如果我们想用JavaScript写出一些能够运行在操作系统上的，能够具有像PHP，JAVA之类的编程语言具有的功能的程序该怎么办呢？Node.js就解决了这个问题。Node.js是一个服务端的JavaScript运行环境，通过Node.js可以实现用JavaScript写独立程序。像我们之前提到的Webpack就是Node.js写的，所以作为一个前端开发，即使你不用Node.js写独立程序，也得配一个Node.js运行环境，毕竟很多前端工具都是使用它写的。
-
-NPM:  
-是一个node.js的包管理器。我们在传统开发的时候，JQuery.js大多都是百度搜索，然后去官网下载，或者直接引入CDN资源，这种方法太过于麻烦。如果以后遇到其他的包，这个包的代码本身可能还调用了其他的包（也称这个包和其他的那几个包存在依赖关系），那么我们要在自己的项目中引入一个包将变得十分困难。现在我们有了NPM这个包管理器，直接可以通过，比如下面这样
-
-> npm install vue
-
-就自动在当前项目文件夹下导入了这个包，并且npm自动下载好了vue这个包依赖的其他包。  
-至于有的人在按照网上的npm教程配置的时候踩坑了，发现下载速度很慢或者完全下载不了，那是因为我国有着众所周知的原因，网上也有各种解决方法可以解决这个问题，大家多善用搜索引擎。  
-前面提到了Webpack可以安装各种插件来扩展功能，其实也是通过这种方式扩展。
-
-### Vue-CLi是什么？
-一个Vue.js脚手架工具，自动帮你生成好项目目录，配置好Webpack，以及各种依赖包的工具  
-[参考昌维-代码之美](https://zhuanlan.zhihu.com/p/25659025)
-
-
 ## JS中的类型转换
 - JS中的类型转换只有三种情况：
 1. 转为boolean
