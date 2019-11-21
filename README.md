@@ -47,11 +47,10 @@
 - document.getElementsByClassName(string)返回一个NodeList里面包含所匹配的元素，string为class的属性值
 ## Module的语法&&Module加载的实现
 ### export语法
-- export规定的对外接口与内部变量是一一对应关系，所以要加"{}"
+- export规定的对外接口与内部变量是一 一对应关系，所以要加"{}"
 - export规定的对外接口与内部变量是动态绑定，意味着可以获取内部变量的实时值，这一点和CommonJS规范完全不同
 - export可以出现在模块顶层任何位置，不能出现在块级作用域内(因为ES6模块是静态编译)
 - export可以导出变量、对象、函数、class等
-普通：  
 ```javascript
 // 写法一
 export var m=1
@@ -70,10 +69,9 @@ export {firstName as myName,age as myAge}
 - import导入的接口是只读，不允许在脚本中改写接口
 - import命令的from指定模块文件的位置，可以是相对路径或者绝对路径。如果只有模块名，则需要配置文件告诉JS引擎模块文件的位置
 - import命令具有提升效果，会提升到模块的头部，首先执行，这种行为本质是import在编译阶段执行的，所以不能在import命令中使用表达式和变量这种在执行时才能   得到结果的语法结构
-- import命令会执行所加载的模块，如果一个模块被加载多次，实际只执行一次。可以有(import "./profile.mjs")的写法，表示仅仅执行profile.mjs模块，但不输入任何值
+- import命令会执行所加载的模块，如果一个模块被加载多次，实际只执行一次。可以有(import  "./profile.mjs")的写法，表示仅仅执行profile.mjs模块，但不输入任何值
 - import整体加载是将所加载模块的接口全部加载到一个对象上，该对象能进行静态分析，不允许运行时改变
 - 模块的整体加载会忽略模块的默认接口
-普通：  
 ```javascript
 // 同export命令一样，一定要加"{}"，导入的变量必须与模块规定的对外接口一致
 import {firstName,lastName,age} from "./profile.mjs"
@@ -87,12 +85,12 @@ import {firstName as myName,age as myAge} from "./profile.mjs"
 ```javascript
 // 将profile.mjs模块的接口全部加载到circle这个对象上
 import * as circle from "./profile.mjs"
-// 报错，circle能静态分析，不允许再添加其它属性
+// 报错，circle对象能静态分析，不允许再添加其它属性
 circle.foo="hello"
 ```
 ### export default语法
 - 一个模块只能有一个默认接口
-- export default后面不能声明变量，因为本质上default就是一个变量
+- export default后面不能声明变量，因为default本质上就是一个变量
 - import命令导入默认接口时不需要"{}"，可以使用任意名称指定默认接口
 ```javascript
 // default.mjs模块的默认接口
@@ -178,25 +176,41 @@ Promise.all([
 });
 ```
 ### Module的加载实现
+#### 浏览器加载规则
+- 使用\< script type="module">\< /script>加载模块，加载模块时默认是异步加载，等同于打开了\< script>标签的defer属性
+- \< script>标签的defer属性要等整个页面正常渲染结束(DOM树完全生成以及其他脚本执行完)才会执行
+- \< script>标签的async属性只要下载完成就会中断渲染继续执行脚本，执行完后再继续渲染
+- 如果有多个\< script>标签，defer属性能保证按顺序加载脚本，async属性就不能保证
+- 同普通脚本一样，也可以使用内嵌的模块，语法行为同加载外部脚本完全一致  
+浏览器加载模块的注意事项：  
 1. 如果你尝试用本地文件加载HTML 文件 (i.e. with a file:// URL), 由于JavaScript 模块的安全性要求，你会遇到CORS 错误。你需要通过服务器来做你的测试
 2. Moudle的扩展名为.mjs方便与传统.js文件的区别，为了服务器能正确识别.mjs的扩展名，需要以MIME-type为javascript/esm加载或者其他javaScript兼容的MIME-type的类型(该问题还未解决)
-3. 详细Module语法、Module加载实现[参考《ES6标准入门笔记》](http://es6.ruanyifeng.com/)
-**未完待续**
+#### 模块的注意事项
+- 代码是在模块作用域运行，而不是在全局作用域。模块内部的顶层变量外部不可见
+- 模块中代码自动采用严格模式，不管你有没有声明'use strict'
+- 模块之中，顶层this返回undefined，所以在模块中顶层使用this没有意义
+- 模块被加载多次，只执行一次
+#### Node加载ES6模块
+- 使用Node加载ES6模块比较麻烦，因为Node的CommonJS模块和ES6模块并不兼容，目前解决方案是将两者分开，采用各自的加载方案
+- Node要求ES6模块采用.mjs后缀名，require命令不能加载.mjs文件，相反.mjs文件中也不能使用require命令
+- 为了与浏览器的import加载相同，Node的.mjs文件支持URL路径
+- 目前Node的import命令只支持加载本地模块(file://协议)  
+[Node加载ES6模块](http://es6.ruanyifeng.com/#docs/module-loader)
 
 ------
 ## github上的"New pull request"作用有哪些？
 在github上个人的repository分为两种，一种是自己创建的，另一种是fork别人的；
-- 自己创建的repository在发布后如果有别人fork你的仓库，并且别人有了新的commited，你觉得ok可以Merge，那么需要如下操作：
+- 自己创建的repository在发布后，别人如果fork你的仓库，并且别人有了新的commited，你觉得ok可以Merge，那么需要如下操作：
     1. 进入仓库页面，选择Code选项，找到New pull request按钮点击进入；
     2. 在新打开的页面里base fork选择自己的仓库和分支，head fork选择你想要Merge的用户的仓库和分支
     3. 点击Create pull request，添加创建说明，再点击Merge pull request就成功将别人的commited合并到自己的分支中了
 - fork别人的repository想要保持和原作者同步更新，那么需要如下操作：
-    1. 同1. a的步骤一样
+    1. 进入仓库页面，选择Code选项，找到New pull request按钮点击进入；
     2. 此时应该点击一compare across fork,再将base fork选择自己的仓库和分支，head fork选择源作者的仓库和分支
-    3. 同1. c的步骤一样
+    3. 点击Create pull request，添加创建说明，再点击Merge pull request就成功将别人的commited合并到自己的分支中了 
 [fork的项目如何保持同作者同步更新](https://www.cnblogs.com/rxbook/p/7090208.html)
 - fork别人的repository想要向源作者推送commited，那么需要如下操作：
-    1. 同2.的步骤类似，只是要将base fork选择源作者的仓库和分支,head fork选择自己的仓库和分支
+    1. 同上面的步骤类似，只是要将base fork选择源作者的仓库和分支,head fork选择自己的仓库和分支
 ## typeof和instanceof
 1. typeof可以判断原始类型和对象，有几点需要注意：
     - typeof null 输出结果为Object,实际上null不是对象，这是JS的一个历史BUG
@@ -224,7 +238,7 @@ Promise.all([
 > 注意图中有一个错误，Boolean 转字符串这行结果我指的是 true 转字符串的例子，不是说 Boolean、函数、Symblo 转字符串都是 `true`
 ![类型转换表格](https://user-gold-cdn.xitu.io/2018/11/15/16716dec14421e47?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
 ## == vs ===
-面试经典题[] == ![]  
+面试经典题：[] == ![]  
 "=="在比较时涉及到类型转换，"==="不会涉及类型转换；在使用"=="时要注意操作数的类型：  
 1. 如果都是原始类型(string/number/boolean，除去特殊值null/undefined/NaN)，两者都转为数值进行判断；
 2. 特殊值的话，null/undefied/NaN 和任何值(不包括自身) == 都为 false；null 和 undefined == 为 true，分别与自身 == 也为true；NaN 与自身 == 为 false；
@@ -261,12 +275,12 @@ PS：*实际上引擎会根据异步任务的类型将它存放在多个队列�
 3. 异步操作的几种方式：  
     - 回调函数，优点是比较容易理解，实现；缺点是不利于代码的阅读和维护，各个部分之间高度耦合(coupling)，使得程序结构混乱、流程难以追踪(尤其多个回调函数嵌套使用)，而且每个任务只能指定一个回调函数
     - 事件监听，优点是容易理解，可以绑定多个事件，每个事件可以指定多个回调函数，而且可以去耦合(decoupling)，有利于模块化。缺点是整个程序都是事件驱动，运行流程不清晰，很难看出主流程。
-    - 发布/订阅，这种方法的性质同"事件监听"类似，但是明显优于后者。因为可以通过查看"信号中心"，了解存在多少个信号、每个信号有多少个订阅者，从而监控程序的运行。[发布/订阅的定义和例子](https://wangdoc.com/javascript/async/general.html)
+    - 发布/订阅，这种方法的性质同"事件监听"类似，但是明显优于后者。因为可以通过查看"信号中心"，了解存在多少个信号(每个信号就是一个事件)、每个信号有多少个订阅者(每个订阅者就是一个回调)，从而监控程序的运行。[发布/订阅的定义和例子](https://wangdoc.com/javascript/async/general.html#%E5%8F%91%E5%B8%83%E8%AE%A2%E9%98%85)
     
 4. 多个异步操作的流程控制  
     - 串行执行，我们可以编写一个流程控制函数，让它控制异步任务，一个任务完成以后，再执行另一个
     - 并行执行，流程控制函数也可以并行执行，即所有异步任务同时执行
-    - 并行与串行的结合，设置一个门槛，每次最多只能并行执行n个异步任务，这样就避免过分占用系统资源  
+    - 并行与串行的结合，设置一个门槛，每次最多只能并行执行n个异步任务，这样就避免过分占用系统资源   
 示例代码：同步任务launcher保证任务队列中只有2个异步任务，异步操作callback负责将items数组的成员以2的倍数添加到results数组中    
 ```javascript
 var items=[1,2,3,4,5,6];
@@ -305,10 +319,11 @@ launcher();
 ## 异步中定时器的应用
 ### setTimeout && setInterval
 setTimeout:  
-1. 用法setTimeout(fn|code,delay[,arg1,arg2,...])，arg1,arg2,等参数会作为回调函数fn的参数传入  
+1. 用法：setTimeout(fn|code,delay[,arg1,arg2,...])，arg1,arg2,等参数会作为回调函数fn的参数传入  
 2. setTimeout函数返回一个整数，作为定时器编号，可以用clearTimeout函数取消  
 ps:***setTimeout和setInterval返回值是连续的，互相依赖的***
-3. setTimeout中的回调操作如果是调用一个对象方法，该方法中的**this会指向全局对象**(这时对象的方法是在全局环境中执行了)  
+3. setTimeout和setInterval是在**事件下轮循环才执行**
+4. setTimeout中的回调操作如果是调用一个对象方法，该方法中的**this会指向全局对象**(这时对象的方法是在全局环境中执行了)  
 例如：
 ```javascript
 var x=1;
@@ -322,8 +337,11 @@ setTimeout(obj.y,1000);
 //解决方案一：用一个函数将obj.y封装
 setTimeout(function(){
     obj.y();
+    // 如果是以下写法，依然输出x=1
+    let b=obj.y;
+    b();
 },1000);
-//解决方案二：用bind方法绑定obj
+//解决方案二(推荐用法)：用bind方法绑定obj
 setTimeout(obj.y.bind(obj),1000);
 ```
 
@@ -353,7 +371,7 @@ function clearAllSetTimeouts(){
 ```javascript
 var input=document.getElementById("my_button");
 input.onclick=function A(){
-//这种写法会导致点击按钮时，先执行<input>的回调函数，即input.value="clickinputbody"而不是期望的input.value="inputbodyinput"
+//这种写法会导致点击按钮时，先执行<input>的回调函数，即input.value="clickinputbody"而不是期望的input.value="clickbodyinput"
     input.value+="input";
 //使用setTimeout(f,0) 
     setTimeout(function B(){
@@ -384,7 +402,7 @@ document.getElementById("input_box").onkeypress=function(event){
 ```
 应用场景三：  
 setTimeout(f,0)的实际意义是在浏览器最早可执行的空闲阶段执行，所以一些计算量大、耗时长的任务可以分成几个部分放在setTimeout中执行  
-示例代码：为<div>元素添加背景色，要求背景色从#100000到#FFFFFF连续变化
+示例代码：为div元素添加背景色，要求背景色从#100000到#FFFFFF连续变化
 ```html
 <div id="change_background" style="width:100px;height:100px;border:1px solid red"></div>
 ```
@@ -737,6 +755,245 @@ newObj.b.c.a.x;
 - Function.prototype._proto__ ===Object.prototype
 - Object.prototype是所有对象的终点  
 ![原型链](https://camo.githubusercontent.com/8c32afe801835586c6ee59ef570fe2b322eadd6e/68747470733a2f2f79636b2d313235343236333432322e636f732e61702d7368616e676861692e6d7971636c6f75642e636f6d2f626c6f672f323031392d30362d30312d3033333932352e706e67)
+## class的基本语法
+- class本质上是函数，内部定义的方法前面不需要加"function"关键词，方法之间不需要","分隔，内部定义的方法不可枚举，与原型不同
+- constructor方法是class默认的方法，通过new创建实例对象时自动调用，默认返回实例对象；如果没有显式定义，JS引擎会自动创建一个空的constructor；
+- 实例的属性和方法必须显式定义在实例对象上(即定义在this对象上)，否则都定义在原型上
+- 实例属性新的写法是定义在class的顶层，并且前面不用加this，只存在属性名和属性值(千万别以为属性是定义在原型上的)
+- class的内部可以定义属性的getter和setter，并且存/取值函数是定义在属性的属性描述对象上
+```javascript
+class A{
+    constructor(name){
+        this.name=name;
+    }
+    get x(){
+        return "hello";
+    }
+    set x(value){
+        console.log('setter:'+value)
+    }
+}
+var descriptor=Object.getOwnPropertyDescriptor(A.prototype,x);
+get in descriptor  //true
+set in descriptor  //true
+```
+- class的属性名可以采用表达式
+```javascript
+var methodName="getValue";
+class A{
+    [methodName](){/*...*/}
+}
+```
+- class也可以采用表达式，可以写出立即执行的class
+```javascript
+// class采用表达式，Me表示类名，只能在class内部使用(Me.name)，在外部无法使用；如果内部用不到可以省略
+var let person = new class Me{
+  constructor(name) {
+    this.name = name;
+  }
+  sayName() {
+    console.log(this.name);
+  }
+}('张三');
+person.sayName(); // "张三"
+```
+- 静态方法和静态属性只能通过类名直接调用；静态方法中的this指向类，而不是实例对象；静态方法和静态属性可以通过子类继承，也可以通过super对象调用
+- ES6不支持私有属性和私有方法，只能通过变通方法达到目的(参考阮一峰的《ES6标准入门》class基本语法章节)
+- ES6为new命令添加了new.target属性，详情参考《ES6标准入门》
+### 注意事项
+- 类和模块内部自动采用严格模式
+- class不存在提升(即不能在定义class之前使用class)
+- this的指向，见示例
+```javascript
+class Logger {
+  printName(name = 'there') {
+    console.log(this);
+    this.print(`Hello ${name}`);
+  }
+
+  print(text) {
+    console.log(text);
+  }
+}
+const logger = new Logger();
+// 对象解构赋值，对象的原型的属性和方法也能通过对象解构赋值
+const { printName } = logger;
+// 这时单独使用printName()，this指向该方法运行时的环境(即class的内部，不是全局环境)
+printName(); // TypeError: Cannot read property 'print' of undefined
+```
+[更多class的基本语法](http://es6.ruanyifeng.com/#docs/class)
+## 原型继承和class继承
+常考面试题：原型如何实现继承？class如何实现继承？class本质是什么？
+### 原型继承
+组合继承：(最常用的继承方式)  
+- 核心方式是在子类的构造函数中通过**Parent.call(this)继承父类的属性**，然后改变子类的原型为**new Parent()来继承父类的函数**
+- 优点在于构造函数可以传参，不会与父类引用属性共享，可以复用父类的函数
+- 缺点就是在继承父类函数的时候调用了父类构造函数，导致**子类的原型**上多了不需要的父类属性，存在内存上的浪费。并且子类实例无法找到正确的构造函数
+```javascript
+function Parent(value){
+    this.val=value;
+}
+Parent.prototype.getValue=function(){
+    console.log(this.val);
+}
+function Child(value){
+    // 在new Child()时就已经继承了父类的属性
+    Parent.call(this,value)
+}
+// 调用了父类构造函数，使得Child.prototype上也有父类的属性，造成内存的浪费
+Child.prototype=new Parent();
+// child.constructor=function Parent(),不能找到child的正确构造函数
+const child=new Child(1);
+```
+
+寄生组合继承：(优化组合继承的缺点)
+```javascript
+function Parent(value){
+    this.val=value;
+}
+Parent.prototype.getValue=function(){
+    console.log(this.val);
+}
+function Child(value){
+    Parent.call(this,value);
+}
+// Child.prototype={constructor:Child},使得原型上没有父类Parent的属性了,并且还能找到正确的构造函数
+Child.prototype=Object.create(Parent.prototype,{
+    constructor:{
+        value:Child,
+        enumerable: false,
+        writable: true,
+        configurable: true
+    }
+});
+// child.constructor=function Child()
+const child=new Child(1);
+```
+### Class继承
+- 原型继承，实质是**先创造子类的实例对象，然后赋值给this，然后再将父类的属性和方法添加到this上面（Parent.call(this)）**
+- class的继承，实质是**先将父类实例对象的属性和方法，加到this上面（所以必须先调用super方法），然后再用子类的构造函数修改this**
+- class的继承机制(ES6继承)的一大优势可以继承原生构造函数，参见下文“原生构造函数的继承”
+
+#### super关键词：
+作为函数使用：  
+- super指的是父类的构造函数，但是返回的是子类的实例对象(即this指向子类的实例对象)
+- 在子类的constructor方法中必须先调用super()，否则会报错
+- super作为函数使用，只能用在constructor方法中，用在其他地方会报错
+
+作为对象使用：  
+1. super作为对象时，在普通方法中指向父类的原型对象；在静态方法中指向父类
+2. 在子类的静态方法中通过super调用父类的方法时，方法内部的this指向当前的子类，而不是子类的实例。见示例一
+3. ES6 规定，在子类普通方法中通过super调用父类的方法时，方法内部的this指向当前的子类实例。
+4. 如果用super对某个属性赋值，由于this指向当前子类实例，赋值的属性会变成子类实例的属性，见示例二
+5. 使用super时必须显式指定是作为函数使用还是对象使用，否则引擎会报错
+6. 由于对象总是继承其他对象，可以在任意一个对象中使用super关键字，见示例三  
+上面的2,3，4点是super比较惊奇的地方[super的实现](https://segmentfault.com/a/1190000015565616)
+示例一：
+```javascript
+class A {
+  constructor() {
+    this.x = 1;
+  }
+  static print() {
+    console.log(this.x);
+  }
+}
+class B extends A {
+  constructor() {
+    super();
+    this.x = 2;
+  }
+  static m() {
+    super.print();
+  }
+}
+// 为子类B赋予静态属性x
+B.x = 3;
+B.m() // 3
+```
+示例二：
+```javascript
+class A {
+  constructor() {
+    this.x = 1;
+  }
+}
+class B extends A {
+  constructor() {
+    super();
+    this.x = 2;
+    super.x = 3;
+    // 表明super.x并没有为A.prototype.x赋值
+    console.log(super.x); // undefined
+    console.log(this.x); // 3
+  }
+}
+let b = new B();
+```
+示例三：
+```javascript
+var obj={
+    toString(){
+        return "myObject:"+super.toString();
+    }
+};
+obj.toString()//myObject:[object object]
+```
+#### class的prototype和__proto__
+**虽然class的本质是函数，但与函数的prototype和__proto__有些许差别**  
+类的继承是按照下面模式：  
+```javascript
+Object.setPrototypeOf=function(obj,proto){
+    obj.__proto__=proto;
+    return obj;
+}
+```
+```javascript
+class A {}
+class B extends A {}
+// Object.setPrototypeOf(B,A)
+B.__proto__ === A // true
+// Object.setPrototypeOf(B.prototype,A.prototype)
+B.prototype.__proto__ === A.prototype // true
+```
+可以这样理解prototype和__proto__:  
+- __proto__是把子类当做对象，所以B.__ proto__===A, A._ _proto__===Function.prototype(A作为一个基类不存在任何继承就当做一个普通函数)
+- prototype是把子类当做构造函数，所以B.prototype._ _proto__===A.prototype(即B.prototype是A.prototype的一个实例)
+#### 原生构造函数的继承
+- ES5中**不允许**继承原生构造函数，因为原生构造函数的this不能绑定，导致子类无法获取原生构造函数的内部属性
+- ES6中**允许**即继承原生构造函数，因为ES6的继承机制是先新建父类的实例对象this，然后再用子类修改子类构造函数；这与ES5中先新建子类的实例对象this，再把父类的属性添加到子类上的继承机制完全不同。
+- extends关键字后面可以有多种类型值(例如：带有prototype属性的函数)
+- 继承原生构造函数意味着可以自定义数据结构，见示例一；但是注意继承Object的子类有一个行为差异，见示例二。
+示例一：自定义一个带有版本控制功能的数组
+```javascript
+class VersionedArray extends Array{
+    constructor(){
+        super();
+        this.history=[[]];
+    }
+    // 每提交一次(即每执行一次commit())，将当前数组添加到history数组中
+    commit(){
+        this.history.push(this.slice());
+    }
+    // 每次回退(即每执行一次revert())，将当期数组恢复到最后一次提交的数组
+    revert(){
+        this.splice(0,this.length,...this.history[this.history.length-1]);
+    }
+}
+```
+示例二：
+```javascript
+class NewObj extends Object{
+    constructor(){
+        // arguments对象的成员为实参
+        super(...arguments);
+    }
+}
+var o=new NewObj({attr:'hello'});
+// o.attr=undefined 表明实例对象o里并不存在attr属性
+o.attr==='hello'//false
+```
+- ES6 改变了Object构造函数的行为，一旦发现Object方法不是通过new Object()这种形式调用，ES6 规定Object构造函数会忽略参数。
 
 ---
 ## 变量提升(var,let,const)
