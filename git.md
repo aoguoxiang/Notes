@@ -25,6 +25,20 @@ $ git config --global user.email 1282392205@qq.com
 ```
 git config user.name //Allen Ochs
 ```
+### Git中用Vim打开，修改，保存文件
+1. Vim有两种工作模式，分别为命令模式和编辑模式
+    - 命令模式：接受、执行vim命令操作的模式，打开文件后默认的模式
+    - 编辑模式：对打开文件的内容进行增、删、改操作的模式
+    - 在命令模式下按`i`进入编辑模式，在编辑模式下按`ESC`退出到命令模式
+2. 创建、打开文件
+    - 输入touch文件名，可创建文件夹
+    - 使用vim加文件路径(或文件名)，按路径打开文件，如果文件不存在就新建文件
+3. 保存文件
+    - 在命令模式下键入`:wq`，回车后，保存修改并退出vim；键入`:w`，回车后，保存修改但不退出vim
+4. 放弃所有文件修改
+    - 在命令模式下键入`:q!`，回车后，放弃所有修改并退出vim；键入`:e!`，回车后，放弃修改但不退出vim
+5. 查看文件内容
+    - 在git命令窗口键入`cat <file>`
 ### 获取帮助
 有三种方法可以找到Git命令的使用手册：
 ```
@@ -42,9 +56,9 @@ man git-<verb>
 使用Git文件时的生命周期图：  
 ![使用Git文件时的生命周期图](https://www.progit.cn/images/lifecycle.png)
 ### git add命令
-- `git add`是一个多功能命令，可以将"未跟踪文件"添加到"跟踪文件"；可以将"已修改文件"添加到"暂存区"；合并时可以把有冲突的文件标记为已解决状态等
+- `git add`是一个多功能命令，可以将"未跟踪文件"添加到"跟踪文件"；可以将"已修改文件"添加到"暂存区"；可以把有“合并冲突”的文件标记为已解决状态等
 - `git add <file>/[url]`命令以"文件"和"目录路径"为参数，如果参数是目录的路径，该命令将递归地跟踪该目录下的所有文件
-- 运行了`git add`之后又作了修改的文件，需要重新运行`git add`把最新版本重新暂存起来
+- 运行了`git add`之后又作了修改的文件(这时使用`git status`会发现同一个文件状态既为"staged"又为"modified")，需要重新运行`git add`把最新版本重新暂存起来
 ### git status命令
 - `git status -s`或者`git status --short`可以以简略、紧凑的方式输出状态
 ```
@@ -65,14 +79,15 @@ M  lib/simplegit.rb
 **`git diff`本身只显示尚未暂存的文件的改动，有时候你一下子暂存所有更新过的文件，运行`git diff`什么也没有就是这个原因**
 - 若要查看已暂存的将要添加到下一次提交的内容，可以使用`git diff --cached`
 ### git commit命令
-- 每一次提交只会记录暂存区的记录，因此在使用`git commit`命令之前先用`git status`查看哪些文件还未添加的暂存区
+- 每一次提交只会记录暂存区的记录，因此在使用`git commit`命令之前先用`git status`查看哪些文件还未添加到暂存区
 - 直接使用`git commit`命令会默认打开文本编辑器(windows下一般为Vim)，以便于输入本次提交说明
 - 可以使用`git commit -m "本次提交说明"`将提交说明和命令行放在同一行(推荐方式)
 - 使用`git commit -a -m "xxx"`将所有已跟踪并暂存起来的文件一并提交，从而跳过使用`git add`命令
 - `git commit --amend`用于重新提交，有时候想要修改提交说明或者提交后发现还有漏掉的文件，这个命令就非常有用(注意会打开Vim编辑器)
 ### git rm命令
 - 要移除已跟踪文件，必须从已跟踪清单中删除，并且提交。如果只是简单地从工作目录中删除文件，Git会认为仅仅修改了该文件，并未从已跟踪清单中移除
-- `git rm`命令不仅将文件从工作目录删除，还将移除的文件添加到暂存区，然后执行`git commit -m`命令，下一次Git就不会它纳入版本管理了  
+- `git rm`命令不仅将文件从工作目录删除，还将移除的文件添加到暂存区，然后执行`git commit -m`命令，下一次Git就不会它纳入版本管理了
+
 注意两种情况：  
 1. 如果文件已修改并添加到暂存区，这时只能使用`git rm -f`强制性删除，这是一种安全特性，用于防止误删还没有添加到快照的数据，这样的数据不能被Git恢复。
 2. 另外一种情况是，我们想把文件从Git仓库中删除（亦即从暂存区域移除），但仍然希望保留在当前工作目录中。换句话说，你想让文件保留在磁盘，但是并不想让 Git 继续跟踪。当你忘记添加 .gitignore 文件，不小心把一个很大的日志文件或一堆 .a 这样的编译生成文件添加到暂存区时，这一做法尤其有用。为达到这一目的，使用`git rm --cached <file>`
@@ -91,27 +106,31 @@ git add README
 - `git log --stat`显示每次提交的简略统计信息，它会统计所有被修改过的文件、有多少文件被修改、修改的文件有多少行被移除或添加、一个提交总结
 - `git log --pretty=<内建子选项>`，其中最有意思的子选项是`--format`，[--format常用选项](https://www.progit.cn/#pretty_format)
 *`git log`常用选项*  
-| 选项 | 说明 |
-|:----:|:----:|
-| -p | 按补丁格式显示每个更新之间的差异 |
-| --stat | 显示每次更新的文件修改统计信息 |
-| --shortstat | 只显示--stat中最后的行数修改添加移除统计 |
-| --name-only | 仅在提交信息后显示已修改的文件清单 |
-| --name-status | 显示新增、修改、删除的文件清单 |
-| --abbrev-commit | 仅显示SHA-1的前几个字符，而非所有的40个字符 |
-|--relative-date | 使用较短的相对时间显示(比如，"2 weeks ago") |
-| --graph | 显示ASCII图形表示的分支合并历史 |
-| --pretty | 使用其他格式显示历史提交信息。可用的选项包括oneline,short,full,fuller和format(后跟指定格式)|  
+<table>
+    <tr><td>选项</td><td>说明</td></tr>
+    <tr><th>-p</th><th>按补丁格式显示每个更新之间的差异</th></tr>
+    <tr><th>--stat</th><th>显示每次更新的文件修改统计信息</th></tr>
+    <tr><th>--shortstat</th><th>显示每次更新的文件修改统计信息</th></tr>
+    <tr><th>--name-only</th><th>仅在提交信息后显示已修改的文件清单</th></tr>
+    <tr><th>--name-status</th><th>显示新增、修改、删除的文件清单</th></tr>
+    <tr><th>--abbrev-commit</th><th>仅显示SHA-1的前几个字符，而非所有的40个字符</th></tr>
+    <tr><th>--relative-date</th><th>使用较短的相对时间显示(比如，“2 weeks ago”)</th></tr>
+    <tr><th>--graph</th><th>显示ASCII图形表示的分支合并历史</th></tr>
+    <tr><th>--pretty</th><th>使用其他格式显示历史提交信息。可用的选项包括oneline,short,full,fuller和format(后跟指定格式)</th></tr>
+</table>
+
 *限制`git log`输出的常用选项*
-| 选项 | 说明 |
-|:----:|:----:|
-| -n | 仅显示最近的n条提交 |
-| --since | 仅显示指定时间之后的提交 |
-| --until | 仅显示指定时间之前的提交 |
-| --author | 仅显示指定作者相关的提交 |
-| --committer | 仅显示指定提交者相关的提交 |
-| --grep | 仅显示含指定关键字的提交 |
-| -S | 仅显示添加或移除某个关键字的提交 |
+<table>
+    <tr><td>选项</td><td>说明</td></tr>
+    <tr><th>-n</th><th>仅显示最近的n条提交</th></tr>
+    <tr><th>--since</th><th>仅显示指定时间之后的提交</th></tr>
+    <tr><th>--until</th><th>仅显示指定时间之前的提交</th></tr>
+    <tr><th>--author</th><th>仅显示指定作者相关的提交</th></tr>
+    <tr><th>--committer</th><th>仅显示指定提交者相关的提交</th></tr>
+    <tr><th>--grep</th><th>仅显示含指定关键字的提交</th></tr>
+    <tr><th>-S</th><th>仅显示添加或移除某个关键字的提交</th></tr>
+</table>
+
 ### 回退到之前的版本
 - 首先使用`git log`查看提交历史，找到要回退版本的commit-id(SHA-1值)
 - 然后使用`git reset --hard <commit-id>`或者`git reset --hard HEAD^`(表示回退到上一个版本)
@@ -130,13 +149,13 @@ git add README
 - `git tag`会列出所有的标签，标签是按字母顺序列出，但是顺序并不重要
 - 可以使用特定模式查找标签，例如你只对Git源代码仓库的"v1.8.5"感兴趣，使用`git tag -l "v1.8.5*"`
 - 轻量标签(lightweight)只是特定提交的一个引用，附注标签(annotated)是存储在Git数据库的一个完整对象，它包含打标签者的名字，创建日期，电子邮件，标签信息等，通常推荐打附注标签，如果只是想临时创建一个标签，也可以使用轻量标签
-    - 标签适合某个特定的commit挂钩，如果某个commit同时在多个分支上，那么所有分支上都能看到该标签
+    - 标签跟某个特定的commit挂钩，如果某个commit同时在多个分支上，那么所有分支上都能看到该标签
     - `git tag -a v1.0 -m "my version v1.0"`创建一个附注标签，如果省略`-m`选项会默认打开编辑器，要求输入标签信息
     - 轻量标签本质上是将提交校验和存储到一个文件中，没有保存任何其他信息。创建轻量标签，不需要使用 -a、-s 或 -m 选项，只需要提供标签名字：
         > `git tag v1.1`
     - 使用`git show <tag-name>`可以显示标签信息
     - 使用`git tag -d <tag-name>`可以删除标签，但是删除远程标签就比较麻烦
-- 使用`git tag -a <tag-name> SHA-1 -m "标签说明"`可以在后期对特定提交打标签
+- 使用`git tag -a <tag-name> <commit-id> -m "标签说明"`可以在后期对特定提交打标签
 - 默认情况下，`git push`不会传送标签到远程服务器上；使用`git push [remote-name] [tag-name]`显式地将标签传送到远程仓库；使用`git push [remote-name] --tag`可以将远程仓库没有的标签一次性全部推送上去
 ## Git分支
 - Git保存的是文件的快照而不是文件的差异
@@ -279,5 +298,17 @@ git branch -vv
     - 通过`git branch -vv`可以查看所有分支列表，它会列出那些分支是跟踪分支并且与远程分支超前落户的情况
     - 通过`git checkout -b [remote-name]/[branch]`从远程跟踪分支上生成本地分支，并且自动设置为跟踪分支；如果已经有本地分支，可以通过`git branch -u [remote-name]/[branch]`设置为跟踪分支
     - 设置好跟踪分支后，可以使用`git merge @{u}`这种快捷方式合并远程分支，而本地分支则只能使用`git merge [remote-name]/[branch]`来合并远程分支
-
-
+## github上的"New pull request"作用有哪些？
+在github上个人的repository分为两种，一种是自己创建的，另一种是fork别人的；
+- 自己创建的repository在发布后，别人如果fork你的仓库，并且别人有了新的commited，你觉得ok可以Merge，那么需要如下操作：
+    1. 进入仓库页面，选择Code选项，找到New pull request按钮点击进入；
+    2. 在新打开的页面里base fork选择自己的仓库和分支，head fork选择你想要Merge的用户的仓库和分支
+    3. 点击Create pull request，添加创建说明，再点击Merge pull request就成功将别人的commited合并到自己的分支中了
+- fork别人的repository想要保持和原作者同步更新，那么需要如下操作：
+    1. 进入仓库页面，选择Code选项，找到New pull request按钮点击进入；
+    2. 此时应该点击一compare across fork,再将base fork选择自己的仓库和分支，head fork选择源作者的仓库和分支
+    3. 点击Create pull request，添加创建说明，再点击Merge pull request就成功将别人的commited合并到自己的分支中了
+[保持同源代码同步的git命令操作](https://www.cnblogs.com/rxbook/p/7090208.html)
+- fork别人的repository想要向源作者推送commited，那么需要如下操作：
+    1. 同上面的步骤类似，只是要将base fork选择源作者的仓库和分支,head fork选择自己的仓库和分支  
+[github上的PR操作](https://www.cnblogs.com/momo798/p/11599679.html)
