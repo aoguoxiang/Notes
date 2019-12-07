@@ -1,50 +1,99 @@
 # 该日记会不定时的记录遇到一些新的知识点和不熟悉知识点的大概总结
-## 如何使用html5的canvas元素绘制矩形、三角形、圆等基本图形
-**ctx是canvas创建的2D上下文环境**
-### 绘制矩形：
-```javascript
-        ctx.fillStyle='#fff';
-        ctx.beginPath();
-        ctx.rect(x,y,width,height);
-        //填充矩形，填充颜色为ctx.fillStyle;
-        //ctx.fillRect(x,y,width,height)是ctx.rect()和ctx.fill()的合并写法
-        ctx.fill();
-        //空心矩形
-        ctx.stroke();
-```    
-### 绘制圆：
-```javascript
-      ctx.fillStyle='#fff';
-      ctx.beginPath();
-      //startAngle圆弧的起始点，以x轴开始计算，单位为弧度；endAngle为圆弧的终止点；anticlockwise代表绘制圆弧的方向，默认值false，顺时针方向
-      ctx.arc(x,y,r,starAngle,endAngle,anticlockwise);
-      //填充圆，填充颜色为ctx.fillStyle
-      ctx.fill();
-      //空心圆
-      ctx.stroke();
-```        
-### 绘制三角形：
-  ```javascript
-        ctx.fillStyle='#fff';
-        ctx.beginPath();
-        ctx.moveTo(x,y);
-        //length为三角形的长度
-        ctx.lineTo(x+length,y);
-        //设置三角形的高，let triHeight=(length/2)*Math.tan();也可以直接设置一个triHeight的值
-        ctx.lineTo(x+length/2,y+triHeight);
-        //最后一个lineTo()的参数要和moveTo()的参数一致，保证三角形路径是封闭的
-        ctx.lineTo(x,y);
-        //填充的三角形，填充颜色为ctx.fillStyle
-        ctx.fill();
-        //空心三角形
-        ctx.stroke();
-```        
-### 延伸的数学知识：
-- 弧度、弧长、角度数的换算关系
-- tan(),cos(),sin()三角函数的概念
 ## 区别querySelector()和getElementsByClassName()
 - document.querySelector(selector)是返回选择器匹配的第一个元素，并且selector是选择器字符串
 - document.getElementsByClassName(string)返回一个NodeList里面包含所匹配的元素，string为class的属性值
+## 字符串的扩展
+### unicode
+- unicode码规定每个字符对应一个数字，unicode v1.0用2个字节表示所有字符(0~65535)
+- unicode码只是规定数字，而要在计算机中存储、传输等，则要用一定的格式，因此utf-8和utf-16出现
+- unicode码和utf-8,utf-16是不一样的，但是目前在计算机实际存储的只能是utf-8和utf-16(理解这一点，否则会混淆unicode,utf-8,utf-16)
+### utf-8
+- utf-8是一种**变长**的编码方式，它可以使用1~4个字节表示一个符号，根据不同的字符变化字节长度  
+编码规则：  
+1. **单字节字符**，第一位设为0，后面7位为这个字符的unicode码(英语字母的unicode码和ASCII码完全一致)
+2. 对于n字节的符号（n>1），第一个字节的前n位都设为1，第n+1位设为0，后面字节的前两位一律设为10。剩下的没有提及的二进制位，全部为这个符号的unicode码。
+<table>
+    <tr><td>unicode码转换成utf-8编码规则,x为可编码的位</td></tr>
+    <tr><td>unicode符号范围(十六进制)</td><td>unicode符号范围(十进制)</td><td>utf-8编码方式(二进制)</td></tr>
+    <tr><th>0000 0000~0000 007F</th><th>0~127</th><th>0xxxxxxx(用1个字节表示)</th></tr>
+    <tr><th>0000 0080~0000 07FF</th><th>128~2047</th><th>110xxxxx 10xxxxxx(用2个字节表示)</th></tr>
+    <tr><th>0000 0800~0000 FFFF</th><th>2048~65535</th><th>1110xxxx 10xxxxxx 10xxxxxx(用3个字节表示)</th></tr>
+    <tr><th>0001 0000~0010 FFFF</th><th>65536~1,114,111</th><th>11110xxx 10xxxxxx 10xxxxxx 10xxxxxx(用4个字节表示)</th></tr>
+</table>
+
+示例：  
+已知“严”的unicode是4E25（10011100 0100101），根据上表，可以发现4E25处在unicode码的第三行范围内（0000 0800-0000 FFFF），因此“严”的UTF-8编码需要三个字节，即格式是“1110xxxx 10xxxxxx 10xxxxxx”。然后，从“严”的最后一个二进制位开始，依次从后向前填入格式中的x，多出的位补0。这样就得到了，
+**“严”的UTF-8编码是“11100100 10111000 10100101”，这是保存在计算机中的实际数据**，转换成十六进制就是E4B8A5，转成十六进制的目的为了便于阅读。
+(这里有个问题，“严”的unicode码实际只需用2个字节就可表示，但是用utf-8编码存储要用到3个字节，造成内存浪费，所以这是utf-8编码的一个缺陷)
+### utf-16
+
+### ES6中字符的unicode表示法
+- ES6可以直接用`\uxxxx`的形式表示一个字符，`xxxx`为unicode的十六进制码点；这种表示仅限于`\u0000~\uFFFF范围`，当unicode码超出这个范围时，就必需用
+*两个双字节*表示(这里涉及到使用utf-16编码存储unicode码)，后面引入`\u{xxxx}`方式就能正确解读字符(对于超出2个字节的unicode码，就无需使用*两个双字节表示*)，见下面示例
+```javascript
+// “吉”的unicode码为20BB7
+// 如果直接用\u20BB7表示，ES6会理解为\u20BB+7，由于\u20BB是一个无法打印的字符，就会输出一个空格，即" 7"
+
+\uD842\uDFB7
+// 用两个双字节表示，输出"吉"
+\u{20BB7}===\uD842\uDFB7
+// ture
+```
+- 加上`\u{}`表示法，js中有6中表示字符串的方法，如下所示
+```javascript
+'\z'==='z'
+// 如果遇到转义字符，就输出转义内容
+'\172'==='z'
+'\x7A'==='z'
+'\u007A'==='z'
+// 注意不能写成'\u7A'，必须是'\uxxxx'形式
+'\u{7A}'==='z'
+```
+### 字符串的遍历器接口
+- ES6为字符串添加Iterator接口，使得可以被`for...of`循环，最大的好处是可以识别unicode码超过`0xffff`的字符
+```javascript
+let text=String.formCodePoint(0x20BB7);
+// for循环无法正确识别超过'0xffff'的字符，在这里会把“吉”当成2个字符
+for(let i=0;i<text.length;i++){
+    console.log(text[i]);
+    // " " 
+    // " "
+}
+// for...of则能正确识别
+for (let t of text){
+    console.log(t);
+    // "吉"
+}
+```
+### 字符串的U+2028和U+2029
+JS中允许直接输入字符或字符的转义形式，例如：`"中"==="\u4e2d"`；但是规定有5种字符  
+- U+005C：反斜杠（reverse solidus)
+- U+000D：回车（carriage return）
+- U+2028：行分隔符（line separator）
+- U+2029：段分隔符（paragraph separator）
+- U+000A：换行符（line feed）  
+不能直接输入(直接输出其转义内容)，只能通过转义形式输出；但是`U+2028`和`U+2029`比较特殊，因为JSON格式是可以直接输入这两种字符，所以服务器输出的JSON被JSON.prase()时会导致报错，所有后面ES2019运行JavaScript 字符串直接输入 U+2028（行分隔符）和 U+2029（段分隔符）。  
+注意：模板字符串现在就允许直接输入这两个字符。另外，正则表达式依然不允许直接输入这两个字符，这是没有问题的，因为 JSON 本来就不允许直接包含正则表达式。
+### 模板字符串
+- 模板字符串中如需使用反引号，则要使用反斜杠(\)进行转义，例如：
+```javascript
+let greeting = `\`Yo\` World!`;
+// `Yo` World!
+```
+- 使用模板字符串输出多行字符串，会保留所有的`空格`，`缩进`输出
+- 模板字符串中嵌入变量要写在`${}`中，大括号中可以是任意JavaScript表达式，如果大括号中的值不是*字符串*，会按照一般规则转换成字符串(比如对象调用toString方法)
+### 标签模板
+概念：  
+模板字符串可以紧跟在一个*函数名*后面，该函数将被调用处理该模板字符串，这称为*标签模板*的功能  
+- 标签模板其实不是模板，是函数调用的一种特殊形式。“标签”指的是函数，紧跟在它后面的模板字符串是它的参数
+- 如果标签模板中有变量，会将模板字符串处理成多个参数，再调用函数，如下示例
+```javascript
+let a=5;
+let b=10;
+tag`Hello ${a+b} word ${a*b}`;
+// 等同于,注意模板字符串中未被变量替换的那部分参数包含空格,空串
+tag(['Hello ',' word ',''],15,50);
+```
 ## Module的语法&&Module加载的实现
 ### export语法
 - export规定的对外接口与内部变量是一 一对应关系，所以要加"{}"
@@ -239,7 +288,7 @@ Promise.all([
 注意：+数据类型 **只会**把数据类型转为数值，转不了会转为NaN，例如'a'+ +'b'=>'aNaN'
 - 除加法运算符外，都**只会**转为数值，转不了的为NaN
 ### `&&`和`||`
-逻辑运算符如下表所示(expr可能是任何一种类型，不一定是布尔值)  
+逻辑运算符如下表所示(expr可能是任何一种类型，不一定是布尔值)   
 <table>
 <tr><<td>语法</td><td>说明</td></tr>
 <tr><th>expr1 && expr2</th><th>如果expr1为真值，则返回expr2，否则返回expr1</th></tr>
@@ -252,7 +301,44 @@ Promise.all([
 扩展运算符：  
 - 扩展运算符(...)好比rest参数的逆运算，大多用在函数调用中(rest参数是用在**函数形参中**)
     > Spread只有在函数调用时用在圆括号中，其他时候用在圆括号中会报错
-- 任何定义了Iterator接口的对象，都可以用Spread转为真正的数组；反之则不能扩展，可以用Array.form()将类似数组对象和具有Iterator接口的对象转为真正的数组  
+- 任何定义了Iterator接口的对象，都可以用Spread转为真正的数组；反之则不能扩展，可以用Array.form()将类似数组对象和具有Iterator接口的对象转为真正的数组
+- Spread可以对**字面量对象**进行展开。其行为是将字面量对象的**可枚举属性**拷贝到新的对象中
+    > 如果Spread用在数组和函数参数中，只能使用具有Iterator接口的对象  
+- 在构造字面量对象中使用Spread和Object.assign()行为一致(两者都是浅拷贝)
+    > Object.assign()会触发setter函数，而Spread则不会  
+- 使用new关键字来调用构造函数时，不能直接使用`数组+apply`的方式，例如：`new myConstructor`
+*示例一：不能替换或者模拟Object.assign()函数*
+```javascript
+var obj1 = { foo: 'bar', x: 42 };
+var obj2 = { foo: 'baz', y: 13 };
+const merge = ( ...objects ) => ( { ...objects } );
+var mergedObj = merge ( obj1, obj2);
+// mergedObj={ 0: { foo: 'bar', x: 42 }, 1: { foo: 'baz', y: 13 } }
+var mergedObj = merge ( {}, obj1, obj2);
+// mergedObj={ 0: {}, 1: { foo: 'bar', x: 42 }, 2: { foo: 'baz', y: 13 } }
+// 在这段代码中, 展开操作符并没有按预期的方式执行: 而是先将多个解构变为剩余参数(rest parameter), 然后再将剩余参数展开为字面量对象.
+```
+*示例二：没有Spread之前，把数组元素传给构造函数的方法*
+```javascript
+function applyAndNew(constructor, args) {
+   function partial () {
+      return constructor.apply(this, args);
+   };
+   if (typeof constructor.prototype === "object") {
+      partial.prototype = Object.create(constructor.prototype);
+   }
+   return partial;
+}
+function myConstructor () {
+   console.log("arguments.length: " + arguments.length);
+   console.log(arguments);
+   this.prop1="val1";
+   this.prop2="val2";
+};
+var myArguments = ["hi", "how", "are", "you", "mr", null];
+var myConstructorWithArguments = applyAndNew(myConstructor, myArguments);
+console.log(new myConstructorWithArguments);
+```
 rest参数：  
 - rest参数(...变量名)是将函数的多余参数放入这个变量中，这个变量是**数组**
 - rest参数只能作为函数的最后一个参数，否则在调用函数时会报错；并且函数的length属性不包括rest参数  
@@ -276,7 +362,9 @@ Event Loop：CPU完全可以不管I/O操作，挂起处于等待中的任务，�
 2. 任务队列和事件循环：  
 任务队列：  
 它是用于存放被引擎挂起的异步任务(异步任务没有回调函数将不会进入队列)  
-PS：*实际上引擎会根据异步任务的类型将它存放在多个队列中*
+PS：*实际上引擎会根据异步任务的类型将它存放在多个队列中*  
+事件循环：  
+事件循环是一种机制
 
 3. 异步操作的几种方式：  
     - 回调函数，优点是比较容易理解，实现；缺点是不利于代码的阅读和维护，各个部分之间高度耦合(coupling)，使得程序结构混乱、流程难以追踪(尤其多个回调函数嵌套使用)，而且每个任务只能指定一个回调函数
@@ -1044,6 +1132,13 @@ test1()
 
 ---
 ## Array.prototype的方法
+### Array.prototype方法的返回值的几种情况
+1. 返回新数组:
+    > 对于有些方法不会修改原始数组，返回值都是新生成的数组对象，例如slice(),map()等等
+2. 返回修改的值：
+    > 对于有些方法修改原始数组，返回值一般都是修改的值，例如splice(),shift(),pop(),push()
+3. 不返回任何值(即返回undefined)，例如forEach()
+4. 其他，例如indexof()返回1或-1
 ### Array.prototype.map()
 语法：
 ```javascript
