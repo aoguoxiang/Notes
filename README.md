@@ -5,8 +5,7 @@
 ## 字符串的扩展
 ### unicode
 - unicode码规定每个字符对应一个数字，unicode v1.0用2个字节表示所有字符(0~65535)
-- unicode码只是规定数字，而要在计算机中存储、传输等，则要用一定的格式，因此utf-8和utf-16出现
-- unicode码和utf-8,utf-16是不一样的，但是目前在计算机实际存储的只能是utf-8和utf-16(理解这一点，否则会混淆unicode,utf-8,utf-16)
+- unicode码只是规定数字，但在计算机中是以utf-8和utf-16编码方式存储、传输(理解这一点，否则会混淆unicode,utf-8,utf-16)
 ### utf-8
 - utf-8是一种**变长**的编码方式，它可以使用1~4个字节表示一个符号，根据不同的字符变化字节长度  
 编码规则：  
@@ -42,9 +41,9 @@
 - 加上`\u{}`表示法，js中有6中表示字符串的方法，如下所示
 ```javascript
 '\z'==='z'
-// 如果遇到转义字符，就输出转义内容
 '\172'==='z'
 '\x7A'==='z'
+// 有点不理解'\172'和'\x7A'的原理
 '\u007A'==='z'
 // 注意不能写成'\u7A'，必须是'\uxxxx'形式
 '\u{7A}'==='z'
@@ -94,9 +93,28 @@ tag`Hello ${a+b} word ${a*b}`;
 // 等同于,注意模板字符串中未被变量替换的那部分参数包含空格,空串
 tag(['Hello ',' word ',''],15,50);
 ```
+- 标签模板的一个重要应用就是过滤用户输入的字符串，如下示例
+```javascript
+let sender='<script>alert("abc")</script>'//恶意代码
+function safeHtml(templateData){
+    let s=templateData[0];
+    for (let i=1;i<arguments.length;i++){
+        let arg=String(arguments[1]);
+        s+=arg.replace(/&/g,"&amp;")
+              .replace(/</g,"&lt;")
+              .replace(/>/g,"&gt;");
+        s+=templateData[i];
+    }
+    return s;
+}
+let message=safeHtml`<p>${sender} has sent you a message.</p>`
+// message= <p>&lt;script&gt;alert("abc")&lt;/script&gt; has sent you a message.</p>
+```
+### 拓展知识
+字符在计算机中的编码方式
 ## Module的语法&&Module加载的实现
 ### export语法
-- export规定的对外接口与内部变量是一 一对应关系，所以要加"{}"
+- export规定的是对外接口而不是值，所以要加"{}"，并且对外接口与内部变量是一 一对应关系
 - export规定的对外接口与内部变量是动态绑定，意味着可以获取内部变量的实时值，这一点和CommonJS规范完全不同
 - export可以出现在模块顶层任何位置，不能出现在块级作用域内(因为ES6模块是静态编译)
 - export可以导出变量、对象、函数、class等
@@ -142,7 +160,6 @@ circle.foo="hello"
 - import命令导入默认接口时不需要"{}"，可以使用任意名称指定默认接口
 ```javascript
 // default.mjs模块的默认接口
-// 等同于export {a as default}
 export default a
 // 这种写法也可以，因为本质上是把值赋给变量default
 export default 13
@@ -290,7 +307,7 @@ Promise.all([
 ### `&&`和`||`
 逻辑运算符如下表所示(expr可能是任何一种类型，不一定是布尔值)   
 <table>
-<tr><<td>语法</td><td>说明</td></tr>
+<tr><td>语法</td><td>说明</td></tr>
 <tr><th>expr1 && expr2</th><th>如果expr1为真值，则返回expr2，否则返回expr1</th></tr>
 <tr><th>expr1 || expr2</th><th>如果expr1为真值，则返回expr1，否则返回expr2</th></tr>
 </table>
@@ -303,10 +320,10 @@ Promise.all([
     > Spread只有在函数调用时用在圆括号中，其他时候用在圆括号中会报错
 - 任何定义了Iterator接口的对象，都可以用Spread转为真正的数组；反之则不能扩展，可以用Array.form()将类似数组对象和具有Iterator接口的对象转为真正的数组
 - Spread可以对**字面量对象**进行展开。其行为是将字面量对象的**可枚举属性**拷贝到新的对象中
-    > 如果Spread用在数组和函数参数中，只能使用具有Iterator接口的对象  
+    > 如果Spread用在数组和函数调用中，只能使用具有Iterator接口的对象  
 - 在构造字面量对象中使用Spread和Object.assign()行为一致(两者都是浅拷贝)
     > Object.assign()会触发setter函数，而Spread则不会  
-- 使用new关键字来调用构造函数时，不能直接使用`数组+apply`的方式，例如：`new myConstructor`
+- 使用new关键字来调用构造函数时，不能直接使用`数组+apply`的方式，例如：`new myConstructor.apply(this,args)`  
 *示例一：不能替换或者模拟Object.assign()函数*
 ```javascript
 var obj1 = { foo: 'bar', x: 42 };
@@ -341,18 +358,18 @@ console.log(new myConstructorWithArguments);
 ```
 rest参数：  
 - rest参数(...变量名)是将函数的多余参数放入这个变量中，这个变量是**数组**
-- rest参数只能作为函数的最后一个参数，否则在调用函数时会报错；并且函数的length属性不包括rest参数  
+- rest参数只能作为函数的最后一个参数，否则在调用函数时会报错；并且函数的length属性不包括rest参数
+    > fn的length属性指的是形参数量，不包括rest参数；arguments的length属性指的是实参数量
 ## this指定
 - 在全局执行环境中，不管是否是严格模式，this都指定为全局对象
 - 在函数执行环境中，严格模式默认指定undefined，非严格模式指定为全局对象
-- 箭头函数，this 关键字指向的是它当前周围作用域(简单来说是包含箭头函数的常规函数，如果没有常规函数的话就是全局对象)
+- 箭头函数，this 关键字指向的是它当前周围作用域(简单来说是包含箭头函数的常规函数，如果没有常规函数的话就是全局对象)  
 ![判断this指定流程图](https://user-gold-cdn.xitu.io/2018/11/15/16717eaf3383aae8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
 > 在箭头函数中如果将this传递给call、bind、或者apply，它将被忽略。不过你仍然可以为调用添加参数，不过第一个参数（thisArg）应该设置为null。bind函数只会生效一次；箭头函数没有prototype属性
 ## 不足知识点
 - 对象转为原始数据类型调用内置函数[[ToPrimitive]]的逻辑
 - 比较运算符的转换逻辑
 [参考《前端面试之道》](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bdc715f6fb9a049c15ea4e0)
-
 -----
 ## 异步
 1. 单线程模型：  
@@ -440,7 +457,7 @@ setTimeout(obj.y.bind(obj),1000);
 ```
 
 setInterval:  
-1. 与setTimeout的前两点一样  
+1. 与setTimeout的前三点一样  
 2. setInterval指定的delay是包含了每次执行任务本身所消耗的时间，因此实际上，两次执行任务的间隔时间小于delay。例如，setInterval指定每 100ms 执行一次，每次执行需要 5ms，那么第一次执行结束后95毫秒，第二次执行就会开始。如果某次执行耗时特别长，比如需要105毫秒，那么它结束后，下一次执行就会立即开始。
 
 示例代码：利用定时器返回的整数取消当前任务所有的setTimeout
@@ -529,7 +546,7 @@ promise对象是异步编程的一种解决方案，比传统的解决方案(回
 - 将异步操作以同步操作的方式表达出来，避免了回调函数的层层嵌套
 
 promise对象特点：  
-- promise对象状态不受外界影响，**只有**异步操作的结果可以决定promise对象的状态。一个promise对象代表一个异步操作，有三种状态pending,fulfilled,rejected。
+- promise对象状态不受外界影响，只有**异步操作的结果**可以决定promise对象的状态。一个promise对象代表一个异步操作，有三种状态pending,fulfilled,rejected。
 - promise对象状态一旦改变就无法更改，promise对象状态改变只能从pending到fulfilled，或pending到rejected；并且在异步操作完成后再添加回调函数也会执行
 
 使用promise时的约定：  
@@ -575,10 +592,10 @@ Promise.resolve("hello").then(function(post) {
   //由then()返回一个promise对象，将该返回值作为参数传递给下一个回调函数，注意这里不会执行该语句，因为上面语句已经有return
   return "world";
 }).then(function (comments) {
-  console.log("resolved: ", comments);
+  console.log("resolved: "+comments);
 }, function (err){
-  console.log("rejected: ", err);
-});
+  console.log("rejected: "+err);
+});// "resolved: hello"
 ```
 ## Promise.prototype.catch()
 - catch()是then(null,failureCallback)的简写，也会返回一个**全新promise实例**
@@ -602,8 +619,8 @@ promise.then(function (value) { console.log(value) });
 > Error('test')
 ## Promise.prototype.finally()
 - 不管promise对象最终状态如何都会执行finally
-- finally()的最终也会返回promise实例，状态由调用finally的promise的状态决定
-- finally()会返回原来的值，见示例
+- finally()的最终也会返回promise实例，状态由调用`Promise.resolve(callback)`决定
+- finally()会返回原来的值，如下：
 ```javascript
 var p1=Promise.resolve(2).finally(()=>{});
 // 控制台输出的p1
@@ -681,66 +698,8 @@ var thenable={
 // 直接生成rejected状态的promise,不会调用thenable.then()，这一点与Promise.resolve()不同
 const p=Promise.reject(thenable);
 p.catch(reason=>{console.log(reason)});
+// reason===thenable ==>true
 ```
-
----
-## 闭包
-概念：  
-闭包是由函数以及创建该函数的词法环境组合而成。**这个环境包含了这个闭包创建时所能访问的所有局部变量**
-
-特点：  
-1. 闭包可以让你从内部函数访问外部函数作用域
-2. 在JS中，函数在每次创建时生成闭包
-3. 闭包是JS语言特有的，因为可以在函数内部声明函数，这是传统编程语言不具有的特性
-4. 每个闭包都是引用自己的词法作用域
-
-闭包面试经典题：
-```javascript
-for(var i=1;i<=5;i++){
-    setTimeout(function timer(){
-        console.log(i);
-    },i*1000);
-    // 最终输出五次6
-}
-```
-原因：由于var变量具有提升作用，所以i是一个全局变量，timer()执行时是从全局环境中获取i的值  
-解决方法一：
-```javascript
-for(var i=1;i<=5;i++){
-    (function(j){
-        setTimeout(function timer(){
-            console.log(j);
-        },j*1000);
-    })(i);
-}
-```
-在立即执行函数中创建了timer这个闭包，timer闭包引用的词法环境是局部变量j，而在每次循环时j=i
-
-解决方法二：
-```javascript
-for(var i=1;i<=5;i++){
-    setTimeout(function timer(j){
-        console.log(j);
-    },j*1000,i);
-}
-```
-每次循环的i会当做timer()的参数传入(timer还是个闭包，只是没有获取外部环境的变量，获取的是它函数内部自己的变量)
-
-解决方法三：
-```javascript
-for(let i=1;i<=5;i++){
-    setTimeout(function timer(){
-        console.log(i);
-    },i*1000);
-}
-```
-使用ES6引入的let关键词，它是块级作用域，每次创建timer闭包时引用的都是独立的词法环境  
-[在循环中创建闭包常见错误](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Closures)
-
-性能考量：  
-> 如果不是某些特定任务需要使用闭包，在其它函数中创建函数是不明智的，因为闭包在处理速度和内存消耗方面对脚本性能具有负面影响。
-
----
 ## AJAX(Asynchronous JavaScript And XML)
 概念：  
 > AJAX是异步的JavaScript和XML（Asynchronous JavaScript And XML）。简单点说，就是使用 XMLHttpRequest 对象与服务器通信。 它可以使用JSON，XML，HTML和text文本等格式发送和接收数据
@@ -788,6 +747,103 @@ readyStatus状态值如下：
 注意：**如果open()方法第三个参数设置为false，表示以同步的方式发送请求，就不需要监听onreadystatechange,但不推荐这样做**  
 [参考示例](https://developer.mozilla.org/zh-CN/docs/Web/Guide/AJAX/Getting_Started)  
 [了解XMLHttpRequest API](https://developer.mozilla.org/zh-CN/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest)
+
+---
+## 闭包
+概念：  
+闭包是由函数以及创建该函数的词法环境组合而成。**这个环境包含了这个闭包创建时所能访问的所有局部变量**
+
+特点：  
+1. 闭包可以让你从内部函数访问外部函数作用域
+2. 在JS中，函数在每次创建时生成闭包
+3. 闭包是JS语言特有的，因为可以在函数内部声明函数，这是传统编程语言不具有的特性
+4. 每个闭包都是引用自己的词法作用域
+
+闭包面试经典题：
+```javascript
+for(var i=1;i<=5;i++){
+    setTimeout(function timer(){
+        console.log(i);
+    },i*1000);
+    // 最终输出五次6
+}
+```
+原因：由于var变量具有提升作用，所以`i`是一个全局变量，timer()执行时是从全局环境中获取`i`的值  
+解决方法一：
+```javascript
+for(var i=1;i<=5;i++){
+    (function(j){
+        setTimeout(function timer(){
+            console.log(j);
+        },j*1000);
+    })(i);
+}
+```
+在立即执行函数中创建了timer这个闭包，timer闭包引用的词法环境是局部变量`j`，而在每次循环时`j=i`
+
+解决方法二：
+```javascript
+for(var i=1;i<=5;i++){
+    setTimeout(function timer(j){
+        console.log(j);
+    },j*1000,i);
+}
+```
+每次循环的`i`会当做timer()的参数传入(timer还是个闭包，只是没有获取外部环境的变量，获取的是它函数内部自己的变量)
+
+解决方法三：
+```javascript
+for(let i=1;i<=5;i++){
+    setTimeout(function timer(){
+        console.log(i);
+    },i*1000);
+}
+```
+使用ES6引入的let关键词，它是块级作用域，每次创建timer闭包时引用的都是独立的词法环境  
+[在循环中创建闭包常见错误](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Closures)
+
+性能考量：  
+> 如果不是某些特定任务需要使用闭包，在其它函数中创建函数是不明智的，因为闭包在处理速度和内存消耗方面对脚本性能具有负面影响。
+## 变量提升(var,let,const)
+提升：  
+是一种将变量和函数的声明移到函数作用域(如果不在任何函数内的话就是全局作用域)最顶部的机制。  
+注意：**从概念的字面意义上说，“变量提升”意味着变量和函数的声明会在物理层面移动到代码的最前面，但这么说并不准确。实际上变量和函数声明在代码里的位置是不会动的，而是在编译阶段被放入内存中**
+
+暂时性死区：  
+在声明变量之前使用变量，JS会抛出异常；let和const存在暂时性死区，var不存在暂时性死区  
+注意：**let和const也存在提升，只是因为暂时性死区的原因导致不能在声明它之前使用**
+
+- 函数提升优先于变量提升，**函数提升会把整个函数挪到作用域顶部，变量提升只会把声明挪到作用域顶部**
+- var 存在提升，我们能在声明之前使用。let、const 因为暂时性死区的原因，不能在声明前使用
+- var 在全局作用域下声明变量会导致变量挂载在 window 上，其他两者不会
+- let 和 const 作用基本一致，但是后者声明的变量不能再次赋值并且在声明时就要初始化
+- JS中鼓励先声明再使用，符合逻辑和代码维护  
+```javascript
+var a = 1
+let b = 1
+const c = 1
+// 在全局作用域中声明let,const变量不会挂载到window对象上，这一点和var不同
+console.log(window.b) // undefined
+console.log(window.c) // undefined
+function test(){
+// 这里的变量a在编译阶段虽然存在提升但是因为“暂时性死区”原因不能在声明之前使用
+// 这里的变量a是块级作用域，和全局作用域的变量a互不影响，因此可以使用相同的变量名
+  console.log(a)
+  let a
+}
+test()
+```
+JS中存在提升的原因：为了解决函数间互相调用的情况，见示例：  
+```javascript
+// 如果不存在提升，那么test2()将永远无法执行
+function test1() {
+    test2()
+}
+function test2() {
+    test1()
+}
+test1()
+```
 
 ---
 ## 浅拷贝&&深拷贝
@@ -1087,48 +1143,6 @@ var o=new NewObj({attr:'hello'});
 o.attr==='hello'//false
 ```
 - ES6 改变了Object构造函数的行为，一旦发现Object方法不是通过new Object()这种形式调用，ES6 规定Object构造函数会忽略参数。
-
----
-## 变量提升(var,let,const)
-提升：  
-是一种将变量和函数的声明移到函数作用域(如果不在任何函数内的话就是全局作用域)最顶部的机制。  
-注意：**从概念的字面意义上说，“变量提升”意味着变量和函数的声明会在物理层面移动到代码的最前面，但这么说并不准确。实际上变量和函数声明在代码里的位置是不会动的，而是在编译阶段被放入内存中**
-
-暂时性死区：  
-在声明变量之前使用变量，JS会抛出异常；let和const存在暂时性死区，var不存在暂时性死区  
-注意：**let和const也存在提升，只是因为暂时性死区的原因导致不能在声明它之前使用**
-
-- 函数提升优先于变量提升，**函数提升会把整个函数挪到作用域顶部，变量提升只会把声明挪到作用域顶部**
-- var 存在提升，我们能在声明之前使用。let、const 因为暂时性死区的原因，不能在声明前使用
-- var 在全局作用域下声明变量会导致变量挂载在 window 上，其他两者不会
-- let 和 const 作用基本一致，但是后者声明的变量不能再次赋值并且在声明时就要初始化
-- JS中鼓励先声明再使用，符合逻辑和代码维护  
-```javascript
-var a = 1
-let b = 1
-const c = 1
-// 在全局作用域中声明let,const变量不会挂载到window对象上，这一点和var不同
-console.log(window.b) // undefined
-console.log(window.c) // undefined
-function test(){
-// 这里的变量a在编译阶段虽然存在提升但是因为“暂时性死区”原因不能在声明之前使用
-// 这里的变量a是块级作用域，和全局作用域的变量a互不影响，因此可以使用相同的变量名
-  console.log(a)
-  let a
-}
-test()
-```
-JS中存在提升的原因：为了解决函数间互相调用的情况，见示例：  
-```javascript
-// 如果不存在提升，那么test2()将永远无法执行
-function test1() {
-    test2()
-}
-function test2() {
-    test1()
-}
-test1()
-```
 
 ---
 ## Array.prototype的方法

@@ -50,7 +50,7 @@ var vm = new Vue({
   data: data
 })
 
-// `$data`指向*选项对象*的data属性，vm.data===undefined
+// `$data`指向"选项对象"的data属性值，Vue实例无法访问"选项对象"的data属性，例如：vm.data===undefined
 vm.$data === data // => true
 vm.$el === document.getElementById('example') // => true
 
@@ -136,9 +136,9 @@ Using v-html directive: red
 用函数的方式定义，像普通属性一样使用  
 侦听器：(watch)  
 当监听的值变化时，就会执行回调函数  
-计算属性默认的方法是getter函数，也可以设置setter函数  
-计算属性是**基于它们的响应式依赖进行缓存的**，只在相关响应式依赖发生改变时它们才会重新求值。这一点同方法截然不同，每次调用方法都将会重新计算求值  
-**侦听属性**适用于数据变化时执行异步操作和或开销较大的操作，但是不要滥用watch，通常用计算属性。  
+- 计算属性默认的方法是getter函数，也可以设置setter函数  
+- 计算属性是**基于它们的响应式依赖进行缓存的**，只在相关响应式依赖发生改变时它们才会重新求值。这一点同方法截然不同，每次调用方法都将会重新计算求值  
+- **侦听属性**适用于数据变化时执行异步操作和或开销较大的操作，但是不要滥用watch，通常用计算属性。  
 参考文档:[适用于侦听器的代码](https://cn.vuejs.org/v2/guide/computed.html)
 ---
 ## class的绑定
@@ -192,4 +192,157 @@ Vue 2.3.0 起你可以为style绑定中的属性提供一个包含多个值的�
 ```
 自动添加前缀：  
 当 v-bind:style 使用需要添加[浏览器引擎前缀](https://developer.mozilla.org/zh-CN/docs/Glossary/Vendor_Prefix)的 CSS 属性时，如 transform，Vue.js 会自动侦测并添加相应的前缀。
-**未完待续**
+---
+## 条件渲染
+### v-if
+`v-if`指令用于条件性的渲染一块内容，这块内容只会在指令的表达式返回`truthy`值的时候被渲染，可以和`v-else`,`v-else-if`一起使用
+#### 在`<template>`元素使用`v-if`条件渲染分组
+```
+<template v-if="ok">
+  <h1>Title</h1>
+  <p>Paragraph 1</p>
+  <p>Paragraph 2</p>
+</template>
+```
+上面代码最终渲染的结果将包含或者不包含`<template>`元素
+#### `v-else`和`v-else-if`
+- `v-else`表示`v-if`的else代码块，必须跟在`v-if`和`v-else-if`后面，否则无法识别
+- 同样，`v-else-if`必须跟在`v-if`和`v-else-if`后面，否则无法识别
+#### 用`key`管理可复用的元素
+Vue 会尽可能高效地渲染元素，通常会复用已有元素而不是从头开始渲染。这么做除了使 Vue 变得非常快之外，还有其它一些好处。例如，如果你允许用户在不同的登录方式之间切换：
+```
+<template v-if="loginType === 'username'">
+  <label>Username</label>
+  <input placeholder="Enter your username">
+</template>
+<template v-else>
+  <label>Email</label>
+  <input placeholder="Enter your email address">
+</template>
+```
+那么在上面的代码中切换`loginType`将不会清除用户已经输入的内容。因为两个模板使用了相同的元素，`<input>`不会被替换掉——仅仅是替换了它的`placeholder`。
+
+这样也不总是符合实际需求，所以Vue为你提供了一种方式来表达“这两个元素是完全独立的，不要复用它们”。只需添加一个具有唯一值的`key`属性即可：
+```
+<input placeholder="Enter your username" key="username">
+<input placeholder="Enter your email address" key="email">
+```
+注意`<label>`元素仍然是复用的，因为它没有添加`key`属性
+### `v-if` vs `v-show`
+- `v-show`同`v-if`作用一样，根据条件展示元素，不同的是`v-show`的元素始终会被渲染并被保留在DOM中。`v-show`只是简单的切换元素的CSS属性display
+    > 注意，`v-show`不支持`<template>`元素，也不支持`v-else`。
+- `v-if`是真正的条件渲染，它会在切换过程中确保条件块内的事件监听器和子组件适当的被销毁和重建
+- `v-if`也是v-if 也是惰性的：如果在初始渲染时条件为假，则什么也不做——直到条件第一次变为真时，才会开始渲染条件块。
+- `v-if`的切换开销更大，渲染开销小；`v-show`的切换开销小，渲染开销大。如果需要频繁切换，则使用`v-show`比较好，如果运行条件很少改变，则使用`v-if`较好
+### `v-if`和`v-for`
+- 不推荐`v-if`和`v-for`同时使用，因为`v-for`比`v-if`具有更高的运算优先级，[查阅列表渲染指南](https://cn.vuejs.org/v2/guide/list.html#v-for-with-v-if)
+## 列表渲染(v-for指令)
+- `v-for`指令使用`item in items`的特殊语法形式，`items`为遍历的数组或对象，`item`为遍历数组元素或对象键值的**别名**
+    > `(item,key) in items`的`key`参数代表当前项的索引或键名
+    > 如果遍历对象是按`Object.key()`的结果遍历，因此可以使用第三个参数作为索引，`(item,key,index) in items`
+    > `item of items`这种`v-for`语法更接近JS迭代器的语法
+### 维护状态
+当Vue正在更新使用`v-for`渲染元素列表的数组元素时，它默认使用`就地复用`的策略，这种默认模式是高效的，
+但**不适用依赖的子组件和临时DO状态M(例如表单输入值)的列表渲染输出**  
+建议尽可能的在使用`v-for`时给每一项提供一个`key`属性，以便Vue方便跟踪每个节点的身份，从而重用和重新排列现有元素，例如：
+```
+<div v-for='item in items' v-bind:key="item.id">
+<!-- 内容 -->
+</div>
+```
+### 数组的更新检测
+#### 变异方法(能改变原始数组的方法)
+Vue将被侦听的数组的变异方法包裹了起来，所以这些变异方法也能触发视图更新，包括以下：  
+`push()`,`pop()`,`shift()`,`unshift()`,`splice()`,`sort()`,`reverse()`
+#### 替换数组
+与*变异方法*相对的是*非变异方法*，它不改变原始数组，总是返回一个新数组。当使用*非变异方法*时，可以用新数组替换旧数组，例如：
+```
+example1.items = example1.items.filter(function (item) {
+  return item.message.match(/Foo/)
+})
+```
+这样并不会导致Vue丢弃现有DOM并重新渲染整个列表。Vue为了使得DOM元素得到最大范围的重用而实现了一些智能的启发式方法，所以用一个**含有相同元素的数组**去替换原来的数组是非常高效的操作。
+#### 注意事项
+由于JS的限制，Vue不能检测以下数组的改变：  
+1. 使用索引直接设置数组元素，例如：`vm.items[indexOfItem]=newValue`
+2. 修改数组的长度，例如：`vm.items.length=newLength`
+为了解决第一类问题，以下两种方式都可以实现和`vm.items[indexOfItem]=newValue`相同的效果
+```javascript
+// Vue.set
+Vue.set(vm.items,indexOfItem,newValue);
+// vm.$set实例方法，该方法时全局方法Vue.set的别名
+vm.$set(vm.items,indexOfItem,newValue);
+```
+```javascript
+// Array.prototype.splice()
+vm.items.splice(indexOfItem,1,newValue)
+```
+为了解决第二类问题，使用`Array.prototype.splice()`
+```javascript
+// 直接删除从newLength索引位置到end
+vm.items.splice(newLength);
+```
+### 对象变更检测注意事项
+由于JS的限制，Vue不能检测**对象属性的添加和删除**  
+对于已经创建的实例，Vue不允许动态添加**根级别**的响应属性。但是可以使用`Vue.set(object,property,newValue)`方法向嵌套对象添加响应属性。例如：
+```javascript
+var vm = new Vue({
+  data: {
+    userProfile: {
+      name: 'Anika'
+    }
+  }
+})
+// 可以添加一个新的age属性到嵌套的userProfile对象
+Vue.set(vm.userProfile,'age',24);
+```
+有时你可能需要为已有对象添加多个属性，比如使用`Object.assign()`，在这种情况下，你应该用两个对象的属性创建一个新对象，例如：
+```javascript
+// 不应该这样做
+Object.assign(vm.userProfile,{
+  age:24,
+  favoriteColor:'Vue Green'
+})
+// 你应该这样做
+vm.userProfile=Object.assign({},vm.userProfile,{
+  age:24,
+  favoriteColor:'Vue Green'
+})
+```
+### 显示过滤/排序后的结果
+有时，我们想要显示一个数组经过过滤或排序后的版本，而不实际改变或重置原始数据。在这种情况下，可以创建一个计算属性，来返回过滤或排序后的数组。例如：
+```html
+<li v-for="n in evenNumbers">{{ n }}</li>
+```
+```javascript
+data: {
+  numbers: [ 1, 2, 3, 4, 5 ]
+},
+computed: {
+  evenNumbers: function () {
+    return this.numbers.filter(function (number) {
+      return number % 2 === 0
+    })
+  }
+}
+```
+在计算属性不适用的情况下，(例如：嵌套的`v-for`循环)，可以使用一个方法，例如：
+```html
+<li v-for="n in even(numbers)">{{ n }}</li>
+```
+```javascript
+data: {
+  numbers: [ 1, 2, 3, 4, 5 ]
+},
+methods: {
+  even: function (numbers) {
+    return numbers.filter(function (number) {
+      return number % 2 === 0
+    })
+  }
+}
+```
+### 在v-for里使用值的范围
+`v-for`可以接受整数，在这种情况下，它会把模板重复对应多次
+### 在`<template>`上使用v-for
+类似于`v-if`，你也可以利用带有`v-for`的`<template>`来循环渲染一段包含多个元素的内容。
