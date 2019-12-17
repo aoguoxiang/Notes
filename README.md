@@ -11,8 +11,9 @@
 编码规则：  
 1. **单字节字符**，第一位设为0，后面7位为这个字符的unicode码(英语字母的unicode码和ASCII码完全一致)
 2. 对于n字节的符号（n>1），第一个字节的前n位都设为1，第n+1位设为0，后面字节的前两位一律设为10。剩下的没有提及的二进制位，全部为这个符号的unicode码。
+
+*unicode码转换成utf-8编码规则,x为可编码的位*
 <table>
-    <tr><td>unicode码转换成utf-8编码规则,x为可编码的位</td></tr>
     <tr><td>unicode符号范围(十六进制)</td><td>unicode符号范围(十进制)</td><td>utf-8编码方式(二进制)</td></tr>
     <tr><th>0000 0000~0000 007F</th><th>0~127</th><th>0xxxxxxx(用1个字节表示)</th></tr>
     <tr><th>0000 0080~0000 07FF</th><th>128~2047</th><th>110xxxxx 10xxxxxx(用2个字节表示)</th></tr>
@@ -25,7 +26,12 @@
 **“严”的UTF-8编码是“11100100 10111000 10100101”，这是保存在计算机中的实际数据**，转换成十六进制就是E4B8A5，转成十六进制的目的为了便于阅读。
 (这里有个问题，“严”的unicode码实际只需用2个字节就可表示，但是用utf-8编码存储要用到3个字节，造成内存浪费，所以这是utf-8编码的一个缺陷)
 ### utf-16
-
+- utf-16编码以16位无符号整数为单位，**16位无符号表示一个单位，不表示一个字符就只有16位**
+- utf-16编码用**2个字节**或**4个字节**表示字符
+- 对于unicode码<0x10000，其utf-16编码对应为unicode的16位无符号编码；对于unicode>=0x10000，要用`两个双字节表示`，utf-16的编码规则如下：  
+    > 记unicode码为U，U'=U-0x10000,utf-16的编码规则`1101 10yy yyyy yyyy 1101 11xx xxxx xxxx`；将U'的二进制位从低位依次放入utf-16编码
+      规则的低位，不够的用0补全，得到的就是utf-16的编码了。例如：`吉`字的unicode码是`20BB7`,`U'=10BB7`转换成二进制码为`0001 0000 1011 1011 0111`
+      ,按照规则对应的utf-16编码为`1101 1000 0100 0010 1101 1111 1011 0111`，用两个双字节表示为`\uD842\uDF87`
 ### ES6中字符的unicode表示法
 - ES6可以直接用`\uxxxx`的形式表示一个字符，`xxxx`为unicode的十六进制码点；这种表示仅限于`\u0000~\uFFFF范围`，当unicode码超出这个范围时，就必需用
 *两个双字节*表示(这里涉及到使用utf-16编码存储unicode码)，后面引入`\u{xxxx}`方式就能正确解读字符(对于超出2个字节的unicode码，就无需使用*两个双字节表示*)，见下面示例
@@ -110,6 +116,42 @@ function safeHtml(templateData){
 let message=safeHtml`<p>${sender} has sent you a message.</p>`
 // message= <p>&lt;script&gt;alert("abc")&lt;/script&gt; has sent you a message.</p>
 ```
+### String.prototype.codePointAt()
+- JS中是以UTF-16储存字符，一个字符占2个字节，对于需要使用4个字节保存的字符，JS会认为有2个字符
+- `codePointAt()`的参数是字符的索引位置，返回对应unicode码的十进制，如果想转为十六进制可以使用`toString(16)`
+- `codePointAt()`可以正确识别`unicode>0xFFFF`字符，例如：
+```javascript
+// '吉'的UTF-16编码为`\uD842\uDFB7`
+let s='吉a'
+s.codePointAt(0) //0x20BB7
+s.codePointAt(1) //0xDFB7
+s.codePointAt(2) //61(a的十进制)
+// 使用codePointAt()虽能正确识别unicode大于0xFFFF的字符，但是在使用的时候还是会把它看成2个字符，可以使用for...of和Spread解决
+
+for (let ch of s){
+    console.log(ch.codePointAt(0).toString(16));
+    // 134071
+    // 61
+}
+let arr=[...s]
+arr.forEach(ch=>{
+    console.log(ch.codePointAt(0).toString(16));
+})
+```
+### 字符串的其他方法扩展
+- JS中使用`indexOf(searchValue[,fromIndex])`判断一个字符是否在某个字符串中，ES6新增了`includes()`,`startsWith()`,`endsWith()`三个判断方法
+- `repeat()`返回一个新的字符串，将原来的字符串重复n次，注意`repeat()`方法的参数
+    1. 参数如果是负数或者`Infinity`会报错，但是`-1~0`的负数会当做`0`处理
+    2. 参数如果是小数，会取整，所有`-1~0`的负数会当做`0`处理
+    3. 参数如果是`NaN`，会当做`0`处理
+    4. 参数如果是字符串，会转为数字，转不了数字的转为`NaN`
+- `padStart(targetLength[,padString])`和`padEnd()`用于补全字符串，前者用于头部补全，后者用于尾部补全
+    1. 如果`targetLength`小于原字符串的长度，补全失效，返回原来的字符串
+    2. 如果`padString`加上原字符串的长度大于`targetLength`，会截取`padString`超出的部分
+    3. 如果省略第二个参数，则使用`空格`补全
+- `trimStart()`和`trimEnd()`作用同`trim()`方法一样，用于消除`空格`，`Tab键`，`换行符`等等不可见的空白符
+    1. `trimSart()`,`trimEnd()`,`trim()`不改变原字符串，返回新字符串
+    2. `trimLeft()`是`trimStart()`的别名；`trimRight()`是`trimEnd()`的别名
 ### 拓展知识
 字符在计算机中的编码方式
 ## Module的语法&&Module加载的实现
@@ -1195,4 +1237,21 @@ Array.prototype.reduce(callback(accumulator,currentVal[,index[,array]]){}[,initi
 
 ---
 ## 对象的扩展
----
+### 属性访问
+- **点记法**后面跟的是一个**有效的JavaScript标识符**；**方括号法**后面跟的是一个**字符串**，这也意味着非字符串对象会通过`toString()`方法转为相应的字符串
+- **对象的属性名**必须是**字符串**或者`Symbol`，任何非字符串对象都无法作为对象的键名，会通过`toString()`转为相应的字符串
+- ES6中引入了*计算属性名*，允许在`[]`中放入表达式，计算结果作为属性名，如下示例：
+```javascript
+var param="size";
+var foo={
+    [param]:12,
+    ["mobile"+param.charAt(0)+param.slice(1)]:4
+}
+// foo={size:12,mobileSize:4}
+```
+### 对象字面量表示法和JSON的区别
+- JSON只允许`"property":value`的语法形式的属性定义。属性名必须使用双引号括起来，并且属性定义不允许使用简便语法
+- JSON中属性值只允许是字符串，数组，数字，null，true,false或其他JSON对象
+- JSON中不允许将值设置为函数
+- `Date`等对象，经过`JSON.parse()`处理后，会变成字符串
+- `JSON.parse()`不会处理计算的属性名，会当错误抛出

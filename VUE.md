@@ -140,6 +140,7 @@ Using v-html directive: red
 - 计算属性是**基于它们的响应式依赖进行缓存的**，只在相关响应式依赖发生改变时它们才会重新求值。这一点同方法截然不同，每次调用方法都将会重新计算求值  
 - **侦听属性**适用于数据变化时执行异步操作和或开销较大的操作，但是不要滥用watch，通常用计算属性。  
 参考文档:[适用于侦听器的代码](https://cn.vuejs.org/v2/guide/computed.html)
+
 ---
 ## class的绑定
 ### 对象语法：
@@ -192,6 +193,7 @@ Vue 2.3.0 起你可以为style绑定中的属性提供一个包含多个值的�
 ```
 自动添加前缀：  
 当 v-bind:style 使用需要添加[浏览器引擎前缀](https://developer.mozilla.org/zh-CN/docs/Glossary/Vendor_Prefix)的 CSS 属性时，如 transform，Vue.js 会自动侦测并添加相应的前缀。
+
 ---
 ## 条件渲染
 ### v-if
