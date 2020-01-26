@@ -9,7 +9,7 @@
     1. 在工作目录中修改文件。
     2. 暂存文件，将文件的快照放入暂存区域。
     3. 提交更新，找到暂存区域的文件，将快照永久性存储到 Git 仓库目录。  
-![git的三种工作区](https://www.progit.cn/images/areas.png)  
+![git的三种工作区](./img/areas.png)  
 [windows下安装Git如何获取最新版本](https://segmentfault.com/q/1010000011704285)
 ### 设置用户信息
 - 当安装完Git应该做的第一件事就是设置你的用户名称与邮件地址。这样做很重要，因为每一个Git的提交都会使用这些信息，并且它会写入到你的每一次提交中，不可更改：
@@ -54,7 +54,7 @@ man git-<verb>
 - 工作目录的文件只有"未跟踪"和"已跟踪"两种状态，而"已跟踪"文件有三种状态，参考上文"Git中的三种状态"
 - 初次克隆某个仓库的时候，工作目录中的所有文件都属于已跟踪文件，并处于未修改状态(即comitted状态)。  
 使用Git文件时的生命周期图：  
-![使用Git文件时的生命周期图](https://www.progit.cn/images/lifecycle.png)
+![使用Git文件时的生命周期图](./img/lifecycle.png)
 ### git add命令
 - `git add`是一个多功能命令，可以将"未跟踪文件"添加到"跟踪文件"；可以将"已修改文件"添加到"暂存区"；可以把有“合并冲突”的文件标记为已解决状态等
 - `git add <file>/[url]`命令以"文件"和"目录路径"为参数，如果参数是目录的路径，该命令将递归地跟踪该目录下的所有文件
@@ -164,9 +164,9 @@ git add README
 - 使用`git commit`进行提交操作时，Git会计算每一个子目录(没有子目录就是项目根目录)的校验和，然后在Git仓库中这些校验和保存为**树对象**。随后，Git 便会创建一个提交对象，它除了包含上面提到的那些信息外，还包含指向这个树对象（项目根目录）的指针。  
 示例：假设现在有一个工作目录，里面包含了三个将要被暂存和提交的文件  
 *首次提交产生的提交对象*
-![首次产生的提交对象](https://www.progit.cn/images/commit-and-tree.png)
+![首次产生的提交对象](./img/commit-and-tree.png)
 *普通提交产生的提交对象以及父对象*
-![普通提交产生的提交对象以及父对象](https://www.progit.cn/images/commits-and-parents.png)
+![普通提交产生的提交对象以及父对象](./img/commits-and-parents.png)
 ### 创建分支
 - Git的分支，其实**本质上仅仅是指向提交对象的可变指针**。Git的默认分支名字是master。在多次提交操作之后，你其实已经有一个指向最后那个提交对象的master分支。它会在每次的提交操作中自动向前移动。
     > Git的“master”分支并不是一个特殊分支。它就跟其它分支完全没有区别。之所以几乎每一个仓库都有 master 分支，是因为git init命令默认创建它，并且大多数人都懒得去改动它。
@@ -182,7 +182,7 @@ git add README
 - 典型合并中会用到**三个快照**，分别是两个分支的末端快照和它们的共同祖先，值得注意的是这种*典型合并可能会产生合并冲突*
     > Git中会自行决定选取哪一个提交作为最优的共同祖先，相比其他VCS需要手动选择最佳的合并基础，使用要简单得多  
 *一次典型合并用到的三个快照*
-![典型合并用到的三个快照](https://www.progit.cn/images/basic-merging-1.png)
+![典型合并用到的三个快照](./img/basic-merging-1.png)
 
 遇到冲突时的分支合并：  
 - **在两个不同分支中对同一个文件的同一部分进行了不同的修改**，就会遇到合并冲突(因为Git无法确定用户是需要哪个分支的修改)，需要用户手动解决
@@ -196,7 +196,7 @@ git add README
 长期分支：  
 - 通常用在大型项目中，这种方法**可以维护不同层次的稳定性**。目的是使你的分支具有不同级别的稳定性；当它们具有一定程度的稳定性后，再把它们合并入具有更高级别稳定性的分支中  
 *渐进稳定分支的流水线视图*
-![渐进稳定分支的流水线视图](https://www.progit.cn/images/lr-branches-2.png)
+![渐进稳定分支的流水线视图](./img/lr-branches-2.png)
 特性分支：  
 - 特性分支是一种短期分支，用来实现单一特性或其相关工作，它适合任何规模的项目  
 [Pro Git分支开发工作流的特性分支](https://www.progit.cn/#_%E5%88%86%E6%94%AF%E5%BC%80%E5%8F%91%E5%B7%A5%E4%BD%9C%E6%B5%81)
@@ -256,9 +256,9 @@ git branch -vv
 
 变基：  
 *通过合并整合分叉历史的提交*
-![通过合并整合分叉历史的提交](https://www.progit.cn/images/basic-rebase-2.png)
+![通过合并整合分叉历史的提交](./img/basic-rebase-2.png)
 *变基的过程——将C4的修改变基到C3上*
-![变基的过程——将C4的修改变基到C3上](https://www.progit.cn/images/basic-rebase-3.png)
+![变基的过程——将C4的修改变基到C3上](./img/basic-rebase-3.png)
     > 注意C4'是相对于C2(于master分支的共同祖先)的补丁+C3
 上面"变基的过程"的原理是**首先找到这两个分支（即当前分支 experiment、变基操作的目标基底分支 master）的最近共同祖先C2，然后对比当前分支相对于该祖先的历次提交，提取相应的修改并存为临时文件，然后将当前分支指向目标基底 C3, 最后以此将之前另存为临时文件的修改依序应用。**最后通过`git checkout master;git merge experiment`进行一次`fast-forward`提交
 
@@ -273,11 +273,11 @@ git branch -vv
 
 更多有趣的变基例子：  
 *从一个特性分支再分出一个特性分支*
-![从一个特性分支再分出一个特性分支](https://www.progit.cn/images/interesting-rebase-1.png)
+![从一个特性分支再分出一个特性分支](./img/interesting-rebase-1.png)
 如果这时只是想将client分支合并到master分支上，暂时不合并server分支，可以使用`git rebase --onto master server client`  
 上面git命令表示“取出 client 分支，找出处于 client 分支和 server 分支的共同祖先(即C3)之后的修改，然后把它们在 master 分支上重放一遍”，最终就变成如下图所示：
 *从特性分支上截取特性分支合并到另一个分支上*
-![从特性分支上截取特性分支合并到另一个分支上](https://www.progit.cn/images/interesting-rebase-2.png)
+![从特性分支上截取特性分支合并到另一个分支上](./img/interesting-rebase-2.png)
 
 变基VS合并：  
 对于是使用“变基”还是“合并”并没有标准答案，回答这个问题可以了解人们对于提交历史的两种看法：  
