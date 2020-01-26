@@ -287,6 +287,7 @@ Promise.all([
 - 使用`<script type="module"></script>`加载模块，加载模块时默认是异步加载，等同于打开了`<script>`标签的defer属性
 - `<script>`标签的defer属性要等整个页面正常渲染结束(DOM树完全生成以及其他脚本执行完)才会执行
 - `<script>`标签的async属性只要下载完成就会中断渲染继续执行脚本，执行完后再继续渲染
+- `<script>`标签的defer和async属性只对外部文件有效，一次对于嵌入的脚本会忽略defer属性
 - 如果有多个`<script>`标签，defer属性能保证按顺序加载脚本，async属性就不能保证
 - 同普通脚本一样，也可以使用内嵌的模块，语法行为同加载外部脚本完全一致  
 浏览器加载模块的注意事项：  
@@ -305,7 +306,73 @@ Promise.all([
 [Node加载ES6模块](http://es6.ruanyifeng.com/#docs/module-loader)
 
 ------
-## typeof和instanceof
+## JS中的数据类型
+### 基本数据类型
+#### undefined
+- undefined类型只有一个值--`undefined`
+- 对于**未初始化**和**未声明**的变量，使用typeof操作符都会得到`undefined`这个结果，如下例
+```javascript
+var message;
+// var age;
+typeof message;//undefined
+typeof age;//undefined
+```
+> 对于未初始化的变量使用typeof得到`undefined`结果很容易理解，但对于未声明的变量得到`undefined`容易让人困惑；这样做有其逻辑上的
+> 合理性，*如果我们都能做到初始化变量，那么在使用typeof得到`undefined`就能知道该变量还未声明，而不是未初始化*
+#### null
+- null类型是第二个只有一个值的数据类型--`null`
+- 从逻辑角度上看，null表示一个空对象指针，因此使用typeof的结果为`object`
+- 实际上，undefined值是null的派生值，因此ECMA-262规定对它们的相等性测试要返回true(注意，仅仅针对于宽松相等运算符`==`)
+- undefined和null的用途完全不同。我们不必对一个变量显式地初始化为undefined，但是对于要保存对象还未真正保存对象的变量使用null初始化，
+  这样不仅可以体现null作为空对象指针的惯例，也有助于区分null和undefined
+#### boolean
+- JS中的所有数据类型都有与Boolean类型值等价的值，要将一个值转换为其对应的Boolean类型值，可以调用`Boolean()`函数
+#### number
+- 整数可以用十进制、八进制(字面值前导为0，后面如果超出数值范围，将当做十进制解析，在严格模式下八进制的字面量是无效的，会抛出错误)、十六进制(字面值
+前导为0x)；在进行算术运算时，所有的八进制和十六进制表示的数值最终都将被转化成十进制
+- 由于保存浮点数值需要的内存是整数的两倍，因此JS会不时地将浮点数值转为整数数值(针对小数点后面没有任何数字和浮点数本来就表示整数，如1.0)；对于极大或
+极小的值可以使用e表示法表示的浮点数值表示ECMASctipt 会将那些小数点后面带有 6 个零以上的浮点数值转换为以 e 表示表示的数值（例如，0.0000003 会被转换成 3e-7）。
+- 由于浮点数值计算会产生舍入误差，永远不要测试一个特定的浮点数值
+- ECMAScript的最小值保存在Number.MIN_VALUE，最大值保存在Number.MAX_VALUE，如果数值超出范围，则会被转为`-infinity`和`infinity`(infinity值
+不能参与计算)；要判断一个数值是否是有穷的，使用`isFinite()`(全局函数)
+- NaN，是一个特殊的数值，这个数值用于表示一个本来要返回数值的操作数未返回数值的情况（这样就不会抛出错误了）。这个数值有两个特点，其一是任何涉及
+NaN的操作都会返回NaN，其二是NaN跟任何值都不相等，包括它自身
+- ECMAScript 定义了`isNaN()`函数(全局函数)。这个函数接受一个参数，该参数可以是任何类型
+- `Number()`,`parseInt()`,`parseFloat()`这三个函数可以将非数值转为数值，`Number()`的参数可以是任何数据类型，`parseInt()`,`parseFloat()`专门
+用于把字符串转换成数值
+- `Number()`转换的规则如下：
+    - 如果是 Boolean 值，true 和 false 将分别被转换为 1 和 0
+    - 如果是数字值，只是简单的传入和返回
+    - 如果是 null 值，返回 0
+    - 如果是 undefined，返回 NaN
+    - 如果是字符串，遵循下列规则：
+        - 如果字符串中只包含数字（包括前面带正号或负号的情况），则将其转换为十进制数值，即"1"会变成 1，"123"会变成 123，而"011"会变成 11（注意：前   导的零被忽略了）；
+        - 如果字符串中包含有效的浮点格式，如"1.1"，则将其转换为对应的浮点数值（同样，也会忽略前导零）；
+        - 如果字符串中包含有效的十六进制格式，例如"0xf"，则将其转换为相同大小的十进制整数值；
+        - 如果字符串是空的（不包含任何字符），则将其转换为 0；
+        - 如果字符串中包含除上述格式之外的字符，则将其转换为 NaN。
+    - 如果是对象，则调用对象的 valueOf()方法，然后依照前面的规则转换返回的值。如果转换的结果是如果转换的结果是 NaN，则调用对象的 toString()方法，    然后再次依照前面的规则转换返回的字符串值。
+- `parseInt()`解析字符串规则如下：
+    - 忽略字符串前面空格，直到找到第一个非空格字符，并且如果不是数字字符或负号，则返回`NaN`(parseInt("")返回NaN,Number("")返回0)
+    - 如果第一个非空格字符是数字字符，则会依次解析第二个字符，直到解析结束或者遇到一个非数字字字符(在parseInt中小数点会被视为非数字字符)
+    - parseInt()能够识别整数格式(即十进制，八进制，十六进制)，但在识别八进制时，ECMAScript3和ECMAScript5有分歧(ECMAScript5不具备识别八进制能力)
+    - parseInt()能接受第二个参数(指定转换的基数)，默认为10
+- `parseFloat()`解析字符串规则同`parseInt()`类似，区别在于`parseFloat()`将第一个小数点视为有效数字字符，没有第二个参数，只解析十进制，因此转换十     六进制时返回0
+#### string
+- JS中除了`null`和`undefined`的所有数据类型的值几乎都有toString()方法，该方法将值转为string类型
+- `toString()`方法可以接受一个参数，表示*输出数值的基数*，没有参数默认输出数值的基数为10
+- `String()`可以将任何类型的值转为字符串，其转换规则如下：
+    - 如果值有toString()方法，调用toString()方法(没有参数)并返回相应结果
+    - 如果值是null，则返回"null"
+    - 如果值是undefined，则返回"undefined"
+### 复合数据类型(Object)
+- 从技术角度讲，ECMA-262 中对象的行为不一定适用于JavaScript中的其他对象。浏览器环境中的对象，比如 BOM 和 DOM 中的对象，都属于宿主对象，因为它们是
+由宿主实现提供和定义的。ECMA-262 不负责定义宿主对象，因此宿主对象可能会也可能不会继承 Object。
+----
+
+## JS中的运算符
+- 使用运算符主要考虑*运算符的优先级和关联性，运算符的操作个数和返回值*，[参考MDN运算符优先级](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/Operator_Precedence)
+### typeof和instanceof
 1. typeof可以判断原始类型和对象，有几点需要注意：
     - typeof null 输出结果为Object,实际上null不是对象，这是JS的一个历史BUG
     - typeof function 输出结果为function，函数在JS中也是属于对象类型的
@@ -320,42 +387,75 @@ Promise.all([
             }
             console.log('hello world' instanceof PrimitiveString);//输出结果为true
 ```
-## 拓展知识：
+#### 拓展知识：
 需了解symbol原始类型值和内置symbol值以及Symbol对象
-
-------
-## JS中的类型转换
-- JS中的类型转换只有三种情况：
-1. 转为boolean
-2. 转为string
-3. 转为number
-> 注意图中有一个错误，Boolean 转字符串这行结果我指的是 true 转字符串的例子，不是说 Boolean、函数、Symblo 转字符串都是 `true`
-![类型转换表格](https://user-gold-cdn.xitu.io/2018/11/15/16716dec14421e47?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
-### == vs ===
-面试经典题：[] == ![]  
-"=="在比较时涉及到类型转换，"==="不会涉及类型转换；在使用"=="时要注意操作数的类型：  
-1. 如果都是原始类型(string/number/boolean，除去特殊值null/undefined/NaN)，两者都转为数值进行判断；
-2. 特殊值的话，null/undefied/NaN 和任何值(不包括自身) == 都为 false；null 和 undefined == 为 true，分别与自身 == 也为true；NaN 与自身 == 为 false；
-3. 原始类型和引用类型进行比较，原始类型是数值引用类型转为数值，原始类型是字符串引用类型转为字符串，原始类型是布尔值两者都转为数值；
-4. 引用类型和引用类型进行比较，比较的是内存地址。  
-回到[] == ![]上面这个问题。"!"运算符优先级大于"=="，实际比较的是 []==false，根据上面的规则3，两个操作数都将转换为数值即0==0，所以输出true
-## JS中的运算符
-### 四则运算符
+### 一元加减运算符(优先级为16，关联性从右到左)
+- 一元加减运算符**不同于**加减运算符，其操作数只有一位
+- 一元加运算符("+操作数")的操作数是数值不做任何改变；如果是非数值，则使用`Number()`函数相同的转换规则对操作数进行转换，然后返回数值
+- 一元减运算符("-操作数")和一元加运算符遵循同样的规则，最后将得到的数值转换为负数
+### 递增减运算符
+- 前置递增减运算符和后置递增减运算符优先级和关联性不同；前置优先级为16，关联性从右到左，后置优先级为17，无关联性
+- 前置递增减运算符是先递增减操作数，再返回数值；后置递增减运算符是先返回数值，再递增减操作数。例如：
+```javascript
+var num1=2;
+var num2=20;
+var num3=--num1+num2;//num3=21,num1=1
+var num3=num1--+num2;//num3=22,num1=1
+```
+- 递增减运算符可以用于任何的数据类型，在用于非数值时遵循`Number()`函数转换规则，并且会将不是`number`类型的变量转换为`number`类型，例如：
+```javascript
+var num1=true;
+var num2="123";
+var num3=--num1//num1=0,typeof num1==>"number"
+var num4=num2--;//num2=122,typeof num2==>"number"
+```
+#### 乘性运算符(`*`,`/`,`%`)
+- 乘法，除法，取模优先级14，关联性从左到右
+- 乘性运算符遇到非Number类型，会遵循`Number()`函数转换规则
+- 乘法特殊值规则：
+    - Infinity*0=NaN
+    - Infinity*非0数值=Infinity(-infinity)
+    - Infinity*Infinity=Infinity
+    - Infinity*NaN=NaN
+- 除法特殊值规则：
+    - 非0数值/0=Infinity(-Infinity);非0数值/Infinity=0
+    - Infinity/NaN=NaN
+    - Infinity/Infinity=NaN
+    - 0/0=NaN
+- 取模特殊值规则：
+    - Infinity%有限值=NaN
+    - 有限值%Infinity=被除数
+    - 有限值%0=NaN
+    - Infinity%Infinity=NaN
+    - 0%任何数值=0
+### 加性运算符
+- 加减法优先级13，关联性从左到右；
 - “+”加法运算符
     1. 如果操作数有一方为字符串，则另一方会转为字符串
     2. 如果操作数没有字符串，会优先转为数字，转不了数字再转为字符串  
-注意：+数据类型 **只会**把数据类型转为数值，转不了会转为NaN，例如'a'+ +'b'=>'aNaN'
-- 除加法运算符外，都**只会**转为数值，转不了的为NaN
-### `&&`和`||`
-逻辑运算符如下表所示(expr可能是任何一种类型，不一定是布尔值)   
+### `&&`和`||`和`!`
+- `!`优先级16，关联性从右到左；`&&`优先级6，关联性从左到右；`||`优先级5，关联性从左到右
+- `&&`和`||`如果操作数不是布尔值，不一定是返回布尔值，如下表所示(expr可能是任何一种类型，不一定是布尔值)   
 <table>
 <tr><td>语法</td><td>说明</td></tr>
 <tr><th>expr1 && expr2</th><th>如果expr1为真值，则返回expr2，否则返回expr1</th></tr>
 <tr><th>expr1 || expr2</th><th>如果expr1为真值，则返回expr1，否则返回expr2</th></tr>
 </table>
 
-- 逻辑运算符是从左到右计算，如果左边的值已经能确定结果，那么右边的值不会再执行(假设是函数不会被调用)
+- `&&`和`||`是从左到右计算，如果左边的值已经能确定结果，那么右边的值不会再执行(假设是函数不会被调用)，因此具有短路效果；我们可以利用`||`
+的短路作用，避免为变量赋null或undefined值，例如：
+```javascript
+var myObject=preferedObjec || backupObject
+// 变量 preferredObject 中包含优先赋给变量 myObject 的值，变量 backupObject 负责在 preferredObject 中不包含有效值的情况下提供后备值。
+```
 - 双重非(!!)运算符，显式的将任意值转换为对应的*布尔值*
+### 关系运算符
+关系运算符在对非数值进行比较时，遵循下列规则：
+- 字符串的比较是对字符编码值进行比较
+- 如果有一个操作数是数值，则另一个操作数将转换为数值进行比较
+- 如果一个操作数是对象，则调用对象的valueOf()方法，然后将得到的数值结果按上面规则进行比较；如果没有valueOf()方法，则调用toString()方法
+，然后将得到的字符串结果按上面规则比较
+- 如果一个操作数是布尔值，则先转换为数值再进行比较
 ### 扩展运算符(...)和rest参数
 扩展运算符：  
 - 扩展运算符(...)好比rest参数的逆运算，大多用在函数调用中(rest参数是用在**函数形参中**)
@@ -402,17 +502,35 @@ rest参数：
 - rest参数(...变量名)是将函数的多余参数放入这个变量中，这个变量是**数组**
 - rest参数只能作为函数的最后一个参数，否则在调用函数时会报错；并且函数的length属性不包括rest参数
     > fn的length属性指的是形参数量，不包括rest参数；arguments的length属性指的是实参数量
+----
+## JS中的类型转换
+- JS中的类型转换只有三种情况：
+1. 转为boolean
+2. 转为string
+3. 转为number
+> 注意图中有一个错误，Boolean 转字符串这行结果我指的是 true 转字符串的例子，不是说 Boolean、函数、Symblo 转字符串都是 `true`
+![类型转换表格](./img/类型转换表格.jpg)
+### == vs ===
+面试经典题：[] == ![]  
+"=="在比较时涉及到类型转换，"==="不会涉及类型转换；在使用"=="时要注意操作数的类型：  
+1. 如果都是原始类型(string/number/boolean，除去特殊值null/undefined/NaN)，两者都转为数值进行判断；
+2. 特殊值的话，null/undefied/NaN 和任何值(不包括自身) == 都为 false；null 和 undefined == 为 true，分别与自身 == 也为true；NaN 与自身 == 为 false；
+3. 原始类型和引用类型进行比较，原始类型是数值引用类型转为数值，原始类型是字符串引用类型转为字符串，原始类型是布尔值两者都转为数值；
+4. 引用类型和引用类型进行比较，比较的是内存地址。  
+回到[] == ![]上面这个问题。"!"运算符优先级大于"=="，实际比较的是 []==false，根据上面的规则3，两个操作数都将转换为数值即0==0，所以输出true
+### 不足知识点
+- 对象转为原始数据类型调用内置函数[[ToPrimitive]]的逻辑
+- 比较运算符的转换逻辑
+[参考《前端面试之道》](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bdc715f6fb9a049c15ea4e0)
+
+----
 ## this指定
 - 在全局执行环境中，不管是否是严格模式，this都指定为全局对象
 - 在函数执行环境中，严格模式默认指定undefined，非严格模式指定为全局对象
 - 箭头函数，this 关键字指向的是它当前周围作用域(简单来说是包含箭头函数的常规函数，如果没有常规函数的话就是全局对象)  
-![判断this指定流程图](https://user-gold-cdn.xitu.io/2018/11/15/16717eaf3383aae8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+![判断this指定流程图](./img/this流程图.jpg)
 > 在箭头函数中如果将this传递给call、bind、或者apply，它将被忽略。不过你仍然可以为调用添加参数，不过第一个参数（thisArg）应该设置为null。bind函数只会生效一次；箭头函数没有prototype属性
-## 不足知识点
-- 对象转为原始数据类型调用内置函数[[ToPrimitive]]的逻辑
-- 比较运算符的转换逻辑
-[参考《前端面试之道》](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bdc715f6fb9a049c15ea4e0)
------
+------
 ## 异步
 1. 单线程模型：  
 众所周知，JavaScript只在一个线程上运行，但是JavaScript引擎有多个线程，单个脚本只能在一个线程上运行(称为主线程)，其他线程都是在后台配合。而且JavaScript语言本身并不慢，慢的是I/O操作，比如等待Ajax请求返回结果，因此引入了事件循环机制(Event Loop)  
@@ -945,7 +1063,7 @@ newObj.b.c.a.x;
 - 所有实例对象都是由构造器生成，它的__proto__属性隐式指向原型对象，并通过__proto__形成原型链
 - 函数比较特殊，即有__proto__属性，也有prototype属性；__proto__指向Function.prototype；prototype属性指向该函数所生成的实例对象的原型对象
 - Function.prototype.__ proto__ ===Object.prototype，Object.prototype是所有对象的终点  
-![原型链](https://camo.githubusercontent.com/8c32afe801835586c6ee59ef570fe2b322eadd6e/68747470733a2f2f79636b2d313235343236333432322e636f732e61702d7368616e676861692e6d7971636c6f75642e636f6d2f626c6f672f323031392d30362d30312d3033333932352e706e67)
+![原型链](./img/prototypeChain.png)
 ## class的基本语法
 - class本质上是函数，内部定义的方法前面不需要加"function"关键词，方法之间不需要","分隔，内部定义的方法不可枚举，与原型继承不同
 - constructor方法是class默认的方法，通过new创建实例对象时自动调用，默认返回实例对象；如果没有显式定义，JS引擎会自动创建一个空的constructor；
