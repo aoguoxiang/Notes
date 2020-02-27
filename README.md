@@ -1,4 +1,4 @@
-# 该日记会不定时的记录遇到一些新的知识点和不熟悉知识点的大概总结
+# JS基础知识总结
 ## 区别querySelector()和getElementsByClassName()
 - document.querySelector(selector)是返回选择器匹配的第一个元素，并且selector是选择器字符串
 - document.getElementsByClassName(string)返回一个NodeList里面包含所匹配的元素，string为class的属性值
@@ -346,12 +346,12 @@ NaN的操作都会返回NaN，其二是NaN跟任何值都不相等，包括它�
     - 如果是 null 值，返回 0
     - 如果是 undefined，返回 NaN
     - 如果是字符串，遵循下列规则：
-        - 如果字符串中只包含数字（包括前面带正号或负号的情况），则将其转换为十进制数值，即"1"会变成 1，"123"会变成 123，而"011"会变成 11（注意：前   导的零被忽略了）；
+        - 如果字符串中只包含数字（包括前面带正号或负号的情况），则将其转换为十进制数值，即"1"会变成 1，"123"会变成 123，而"011"会变成 11（注意：前 导的零被忽略了）；
         - 如果字符串中包含有效的浮点格式，如"1.1"，则将其转换为对应的浮点数值（同样，也会忽略前导零）；
         - 如果字符串中包含有效的十六进制格式，例如"0xf"，则将其转换为相同大小的十进制整数值；
         - 如果字符串是空的（不包含任何字符），则将其转换为 0；
         - 如果字符串中包含除上述格式之外的字符，则将其转换为 NaN。
-    - 如果是对象，则调用对象的 valueOf()方法，然后依照前面的规则转换返回的值。如果转换的结果是如果转换的结果是 NaN，则调用对象的 toString()方法，    然后再次依照前面的规则转换返回的字符串值。
+    - 如果是对象，则调用对象的 valueOf()方法，然后依照前面的规则转换返回的值。如果转换的结果是 NaN，则调用对象的 toString()方法，然后再次依照前面的规则转换返回的字符串值。
 - `parseInt()`解析字符串规则如下：
     - 忽略字符串前面空格，直到找到第一个非空格字符，并且如果不是数字字符或负号，则返回`NaN`(parseInt("")返回NaN,Number("")返回0)
     - 如果第一个非空格字符是数字字符，则会依次解析第二个字符，直到解析结束或者遇到一个非数字字字符(在parseInt中小数点会被视为非数字字符)
@@ -399,8 +399,9 @@ NaN的操作都会返回NaN，其二是NaN跟任何值都不相等，包括它�
 ```javascript
 var num1=2;
 var num2=20;
+var num4=3;
 var num3=--num1+num2;//num3=21,num1=1
-var num3=num1--+num2;//num3=22,num1=1
+var num3=(num4--)+num2;//num3=23,num4=2
 ```
 - 递增减运算符可以用于任何的数据类型，在用于非数值时遵循`Number()`函数转换规则，并且会将不是`number`类型的变量转换为`number`类型，例如：
 ```javascript
@@ -524,13 +525,521 @@ rest参数：
 [参考《前端面试之道》](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bdc715f6fb9a049c15ea4e0)
 
 ----
+## JS中的变量、作用域(执行环境)和内存
+### var、let和const变量
+- ES5中没有块级作用域，只有**全局作用域**和**函数作用域**；ES6引入了`let`和`const`变量，这两个变量是块级作用域
+- ES5中规定函数只能在全局作用域和函数作用域之中声明，不能在块级作用域声明，但是浏览器并没有遵循这个规定，为了兼容以前的旧代码，还是支持
+在块级作用域声明函数，在运行中不会报错；ES6引入块级作用域后，*明确规定可以在块级作用域里声明函数，函数声明语句类似let，在块级作用域外无效*，如下：
+```javascript
+function f() { console.log('I am outside!'); }
+(function () {
+  if (false) {
+    // 重复声明一次函数f
+    function f() { console.log('I am inside!'); }
+  }
+  f();
+}());
+```
+上面这段代码在ES5环境中会打印`I am inside!`,因为函数提升了；在ES6环境中，我们以为会打印`I am outside`,但实际会报错，为什么？  
+原来，如果改变了块级作用域内声明的函数的处理规则，显然会对老代码产生很大影响。为了减轻因此产生的不兼容问题，ES6 在附录 B里面规定，浏览器的实现可以不遵守上面的规定，有自己的行为方式。  
+- 允许在块级作用域内声明函数。
+- 函数声明类似于var，即会提升到全局作用域或函数作用域的头部。(注意这里不是指函数提升，而是按var变量提升)
+- 同时，函数声明还会提升到所在的块级作用域的头部。
+**注意，上面三条规则只对 ES6 的浏览器实现有效，其他环境的实现不用遵守，还是将块级作用域的函数声明当作let处理。**  
+因此，根据上面三条规则，上面的代码在ES6环境中实际如下：  
+```javascript
+function f() { console.log('I am outside!'); }
+(function () {
+  var f=undefined;
+  if (false) {
+    // 重复声明一次函数f
+    function f() { console.log('I am inside!'); }
+  }
+  f();
+}());
+    // TypeError: f is not a function
+```
+所以，我们应该避免在块级作用域中声明函数，如果需要，尽量用函数表达式
+#### 变量提升(var,let,const)
+提升：  
+是一种将变量和函数的声明移到函数作用域(如果不在任何函数内的话就是全局作用域)最顶部的机制。  
+注意：**从概念的字面意义上说，“变量提升”意味着变量和函数的声明会在物理层面移动到代码的最前面，但这么说并不准确。实际上变量和函数声明在代码里的位置是不会动的，而是在编译阶段被放入内存中**
+
+暂时性死区：  
+在声明变量之前使用变量，JS会抛出异常；let和const存在暂时性死区，var不存在暂时性死区  
+注意：**let和const也存在提升，只是因为暂时性死区的原因导致不能在声明它之前使用**
+
+- 函数提升优先于变量提升，**函数提升会把整个函数挪到作用域顶部，变量提升只会把声明挪到作用域顶部**
+- var 存在提升，我们能在声明之前使用。let、const 因为暂时性死区的原因，不能在声明前使用
+- var 在全局作用域下声明变量会导致变量挂载在 window 上，其他两者不会
+- let 和 const 作用基本一致，但是后者声明的变量不能再次赋值并且在声明时就要初始化
+- JS中鼓励先声明再使用，符合逻辑和代码维护  
+```javascript
+var a = 1
+let b = 1
+const c = 1
+// 在全局作用域中声明let,const变量不会挂载到window对象上，这一点和var不同
+console.log(window.b) // undefined
+console.log(window.c) // undefined
+function test(){
+// 这里的变量a在编译阶段虽然存在提升但是因为“暂时性死区”原因不能在声明之前使用
+// 这里的变量a是块级作用域，和全局作用域的变量a互不影响，因此可以使用相同的变量名
+  console.log(a)
+  let a
+}
+test()
+```
+JS中存在提升的原因：为了解决函数间互相调用的情况，见示例：  
+```javascript
+// 如果不存在提升，那么test2()将永远无法执行
+function test1() {
+    test2()
+}
+function test2() {
+    test1()
+}
+test1()
+```
+### 作用域(执行环境)
+概念：  
+执行环境(execution context)定义变量或者函数**有权访问**的其他数据，每个执行环境都有一个与之关联的**变量对象**
+(我们在编写代码时无法直接访问变量对象)  
+作用域链(scope chain):当代码在一个环境中执行时，会创建变量对象的一个作用域链。作用域链的用途，是保证对执行环境有权访问的所有变量和函数的有序访问
+
+延长作用域链:
+在两种情况下会发生这种现象。具体来说，就是当执行流进入下列任何一个语句时，作用域链就会得到加长：  
+- try-catch 语句的 catch 块；
+- with 语句。
+这两个语句都会在作用域链的前端添加一个变量对象。对 with 语句来说，会将指定的对象添加到作用域链中。对 catch 语句来说，会创建一个新的变量对象，其中包含的是被抛出的错误对象的声明。下面看一个例子。
+```javascript
+function buildUrl() {
+ var qs = "?debug=true";
+ with(location){
+ var url = href + qs;
+ }
+/*console.log(href)会出现RerferenceError,因为with语句使得作用域链延长，href存在于locationg对象中
+ *但是with语句中的url变量是属于函数执行环境的而不属于location对象，因此可以直接作为buildUrl()函数的返回值
+*/
+ return url;
+} 
+```
+### 内存问题
+JavaScript 是一门具有自动垃圾收集机制的编程语言，开发人员不必关心内存分配和回收问题。可以对 JavaScript 的垃圾收集例程作如下总结。
+- 离开作用域的值将被自动标记为可以回收，因此将在垃圾收集期间被删除。
+- “标记清除”是目前主流的垃圾收集算法，这种算法的思想是给当前不使用的值加上标记，然后再回收其内存。
+- 另一种垃圾收集算法是“引用计数”，这种算法的思想是跟踪记录所有值被引用的次数。JavaScript引擎目前都不再使用这种算法；但在 IE 中访问非原生 JavaScript 对象（如 DOM 元素）时，这种算法仍然可能会导致问题。
+- 当代码中存在循环引用现象时，“引用计数”算法就会导致问题。
+- 解除变量的引用不仅有助于消除循环引用现象，而且对垃圾收集也有好处。为了确保有效地回收内存，应该及时解除不再使用的全局对象、全局对象属性以及循环引用变量的引用。
+---
+### Date类型
+在调用 Date 构造函数而不传递参数的情况下，*新创建的对象自动获得当前日期和时间*。如果想根据特定的日期和时间创建日期对象，必须传入表示该日期的毫秒数（即从 UTC 时间 1970 年 1 月 1 日午夜起至该日期止经过的毫秒数）。为了简化这一计算过程，ECMAScript 提供了两个方法：`Date.parse()`和`Date.UTC()`。
+
+Date.parse():  
+`Date.parse()`方法接收一个表示日期的字符串参数，然后尝试根据这个字符串返回相应日期的毫秒数。ECMA-262 没有定义`Date.parse()`应该支持哪种日期格式，因此这个方法的行为因实现而异，而且通常是因地区而异。将地区设置为美国的浏览器通常都接受下列日期格式：
+- “月/日/年”，如 6/13/2004；
+- “英文月名 日,年”，如 January 12,2004；
+- “英文星期几 英文月名 日 年 时:分:秒 时区”，如 Tue May 25 2004 00:00:00 GMT-0700。
+- ISO 8601 扩展格式 YYYY-MM-DDTHH:mm:ss.sssZ（例如 2004-05-25T00:00:00）。只有兼容ECMAScript5的实现支持这种格式。
+
+Date.UTC():  
+`Date.UTC()`方法同样也返回表示日期的毫秒数，但它与`Date.parse()`在构建值时使用不同的信息。`Date.UTC()`的参数分别是年份、基于0的月份、月中的哪一天
+（1 到 31）、小时数（0 到 23）、分钟、秒以及毫秒数。在这些参数中，只有前两个参数（年和月）是必需的。如果没有提供月中的天数，则假设天数为 1；如果省略其他参数，则统统假设为 0。  
+> 实际上省略`Date.parse()`和`Date.UTC()`，JS引擎会在后台添加`Date.parse()`和`Date.UTC()`
+```javascript
+// 使用Date.parse()解析日期字符串
+var date=new Date(Date.parse("Feb 1,2020"));
+// 使用Date.UTC()解析日期
+date=new Date(Date.UTC(2020,1,1,11));
+// 省略Date.parse()
+var date1=new Date("Feb 1,2020");
+// 省略Date.UTC()
+date1=new Date(2020,1,1,11,9);
+```
+---
 ## this指定
 - 在全局执行环境中，不管是否是严格模式，this都指定为全局对象
 - 在函数执行环境中，严格模式默认指定undefined，非严格模式指定为全局对象
-- 箭头函数，this 关键字指向的是它当前周围作用域(简单来说是包含箭头函数的常规函数，如果没有常规函数的话就是全局对象)  
+- 箭头函数，this 关键字指向的是它当前周围作用域(简单来说是包含箭头函数的常规函数，如果没有常规函数的话就是全局对象)
+- `this`不再函数中时，指向全局对象  
+```javascript
+var age=13;
+var obj={
+    age:this.age
+}
+obj.age // 13
+```
 ![判断this指定流程图](./img/this流程图.jpg)
 > 在箭头函数中如果将this传递给call、bind、或者apply，它将被忽略。不过你仍然可以为调用添加参数，不过第一个参数（thisArg）应该设置为null。bind函数只会生效一次；箭头函数没有prototype属性
 ------
+## 对象的扩展
+### 属性访问
+- **点记法**后面跟的是一个**有效的JavaScript标识符**；**方括号法**需要计算，后面跟的是一个**字符串**，这也意味着非字符串对象会
+通过`toString()`方法转为相应的字符串
+- **对象的属性名**必须是**字符串**或者`Symbol`，任何非字符串对象都无法作为对象的键名，会通过`toString()`转为相应的字符串
+- ES6中引入了*计算属性名*，允许在`[]`中放入表达式，计算结果作为属性名，如下示例：
+```javascript
+var param="size";
+var foo={
+    [param]:12,
+    ["mobile"+param.charAt(0)+param.slice(1)]:4
+}
+// foo={size:12,mobilesize:4}
+```
+### 属性描述符
+- 对象的属性目前存在两种属性描述符：**数据描述符**和**存取描述符**，属性只能是这两种属性描述符其中之一，不能同时拥有  
+- 如果一个属性描述符不具有`value,writable,get和set`中的任何一个，那么它将被认为是**数据描述符**
+数据描述符：  
+数据描述符是一个具有值的属性，具有以下属性特性(默认值是在使用Object.definePropert()定义属性的情况下)：  
+- `configurable`
+    > 当且仅当该属性的`configurable`为true时，该属性`描述符`才能够改变，同时能使用`delete`操作符删除该属性。**默认为false**
+- `enumerable`
+    > 当且仅当该属性的`enumerable`为true时，该属性才能够出现在对象的枚举属性中。**默认为false**
+- `value`
+    > 该属性对应的值。可以是任何有效的javaScript值(基本类型值，对象，函数)。**默认为undefined**
+- `writable`
+    > 当且仅当该属性的`writable`为true时，`value`才能被赋值运算符改变。**默认false**
+
+存取描述符：  
+存取描述符是由getter-setter函数对描述的属性，具有同数据描述符一致的`configurable`和`enumerable`属性特性，另外还具有以下属性特性
+(默认值是在使用Object.definePropert()定义属性的情况下)：  
+- `get`
+    > 一个给属性提供`getter`的方法，如果没有`getter`则为`undefined`。当访问该属性时，该方法会被执行，方法执行时没有参数传入，但是会传入this对象（由于继承关系，这里的this并不一定是定义该属性的对象）。
+- `set`
+    > 一个给属性提供`setter`的方法，如果没有`setter`则为`undefined`。当属性值修改时，触发执行该方法。该方法将接受唯一参数，即该属性新的参数值。
+### 对象字面量表示法和JSON的区别
+- JSON只允许`"property":value`的语法形式的属性定义。属性名必须使用双引号括起来，并且属性定义不允许使用简便语法
+- JSON中属性值只允许是字符串，数组，数字，null，true,false或其他JSON对象
+- JSON中不允许将值设置为函数
+- `Date`等对象，经过`JSON.parse()`处理后，会变成字符串
+- `JSON.parse()`不会处理计算的属性名，会当错误抛出
+### Object.prototype.isPrototypeOf()
+- `isPrototypeOf()`用于判断调用对象是否在另一个对象的原型链上
+> `isPrototypeOf()`与`instanceof`运算符不同。在表达式 "object instanceof AFunction"中，object 的原型链是针对 AFunction.prototype 进行检查的，而不是针对 AFunction 本身。
+### in操作符
+- `in`操作符可以单独使用，也可以在`for-in`中使用，都是访问对象上的**可枚举的属性名**，包括其原型链上的对象
+- `Object.keys()`参数接收一个对象，只返回**实例对象**上的**可枚举的属性名**组成的字符串数组
+- `Object.getOwnPropertyNames()`参数接收一个对象，只返回**实例对象**上的所有的属性名(包括不可枚举属性)组成的字符串数组
+---
+## 原型&&原型链
+- Object.prototype和Function.prototype是JS引擎创建的两个特殊对象
+- 所有实例对象都是由构造器生成，它的__proto__属性隐式指向原型对象，并通过__proto__形成原型链
+- 函数比较特殊，即有__proto__属性，也有prototype属性；__proto__指向Function.prototype；prototype属性指向该函数所生成的实例对象的原型对象
+- Function.prototype.__ proto__ ===Object.prototype，Object.prototype是所有对象的终点  
+![原型链](./img/prototypeChain.png)
+### 原型的动态性
+- 在调用构造函数创建实例对象后重写原型对象，会切断之前的实例对象与原型对象的联系，例如：
+```javascript
+function Person={}
+var friend=new Person();
+Person.prototype={
+    name:"Allen",
+    age:24,
+    job:"Font-end engineer"
+}
+friend.job //error
+```
+原因：  
+我们知道，调用构造函数时会为实例添加一个指向最初原型的[[Prototype]]指针(实例对象的__proto__)，而把原型修改为另外一个对象就等于切断了构造函数与最初原型之间的联系。请记住：**实例中的指针仅指向原型，而不指向构造函数**，如下图所示：  
+![原型动态性](/img/prototypeDynamic.png)
+
+---
+## class的基本语法
+- class本质上是函数，内部定义的方法前面不需要加"function"关键词，方法之间不需要","分隔，内部定义的方法不可枚举，与原型继承不同
+- constructor方法是class默认的方法，通过new创建实例对象时自动调用，默认返回实例对象；如果没有显式定义，JS引擎会自动创建一个空的constructor；
+- 实例的属性和方法必须显式定义在实例对象上(即定义在this对象上)，否则都定义在原型上
+- 实例属性新的写法是定义在class的顶层，并且前面不用加this，只存在属性名和属性值(千万别以为属性是定义在原型上的)
+- class的内部可以定义属性的getter和setter，并且存/取值函数是定义在属性的属性描述对象上
+```javascript
+class A{
+    constructor(name){
+        this.name=name;
+    }
+    // 这里的x是A.prototype的属性，区别于x='hello'(实例对象上的属性)
+    get x(){
+        return "hello";
+    }
+    set x(value){
+        console.log('setter:'+value)
+    }
+}
+var descriptor=Object.getOwnPropertyDescriptor(A.prototype,x);
+get in descriptor  //true
+set in descriptor  //true
+```
+- class的属性名可以采用表达式
+```javascript
+var methodName="getValue";
+class A{
+    [methodName](){/*...*/}
+}
+```
+- class也可以采用表达式，可以写出立即执行的class
+```javascript
+// class采用表达式，Me表示类名，只能在class内部使用(Me.name)，在外部无法使用；如果内部用不到可以省略
+var person = new class Me{
+  constructor(name) {
+    this.name = name;
+  }
+  sayName() {
+    console.log(this.name);
+  }
+}('张三');
+person.sayName(); // "张三"
+```
+- 静态方法和静态属性只能通过类名直接调用；静态方法中的this指向类，而不是实例对象；静态方法和静态属性可以通过子类继承，也可以通过super对象调用
+- ES6不支持私有属性和私有方法，只能通过变通方法达到目的(参考阮一峰的《ES6标准入门》class基本语法章节)
+- ES6为new命令添加了new.target属性，详情参考《ES6标准入门》
+### 注意事项
+- 类和模块内部自动采用严格模式
+- class不存在提升(即不能在定义class之前使用class)
+- this的指向，见示例
+```javascript
+class Logger {
+  printName(name = 'there') {
+    this.print(`Hello ${name}`);
+  }
+
+  print(text) {
+    console.log(text);
+  }
+}
+const logger = new Logger();
+// 对象解构赋值，对象的原型的属性和方法也能通过对象解构赋值
+const { printName } = logger;
+// 这时单独使用printName()，this指向该方法运行时的环境(即class的内部，不是全局环境)
+printName(); // TypeError: Cannot read property 'print' of undefined
+```
+[更多class的基本语法](http://es6.ruanyifeng.com/#docs/class)
+## 原型继承和class继承
+常考面试题：原型如何实现继承？class如何实现继承？class本质是什么？
+### 原型继承
+组合继承：(最常用的继承方式)  
+- 核心方式是在子类的构造函数中通过**Parent.call(this)继承父类的属性**，然后改变子类的原型为**new Parent()来继承父类的函数**
+- 优点在于构造函数可以传参，不会与父类引用属性共享，可以复用父类的函数
+- 缺点就是在继承父类函数的时候调用了父类构造函数，导致**子类的原型**上多了不需要的父类属性，存在内存上的浪费。并且子类实例无法找到正确的构造函数
+```javascript
+function Parent(value){
+    this.val=value;
+}
+Parent.prototype.getValue=function(){
+    console.log(this.val);
+}
+function Child(value){
+    // 在new Child()时就已经继承了父类的属性
+    Parent.call(this,value)
+}
+// 调用了父类构造函数，使得Child.prototype上也有父类的属性，造成内存的浪费
+Child.prototype=new Parent();
+// child.constructor=function Parent(),不能找到child的正确构造函数
+const child=new Child(1);
+```
+
+寄生组合继承：(优化组合继承的缺点)
+```javascript
+function Parent(value){
+    this.val=value;
+}
+Parent.prototype.getValue=function(){
+    console.log(this.val);
+}
+function Child(value){
+    Parent.call(this,value);
+}
+// Child.prototype={constructor:Child},使得原型上没有父类Parent的属性了,并且还能找到正确的构造函数
+Child.prototype=Object.create(Parent.prototype,{
+    constructor:{
+        value:Child,
+        enumerable: false,
+        writable: true,
+        configurable: true
+    }
+});
+// child.constructor=function Child()
+const child=new Child(1);
+```
+### Class继承
+- 原型继承，实质是**先创造子类的实例对象，然后赋值给this，然后再将父类的属性和方法添加到this上面（Parent.call(this)）**
+- class的继承，实质是**先将父类实例对象的属性和方法，加到this上面（所以必须先调用super方法），然后再用子类的构造函数修改this**
+- class的继承机制(ES6继承)的一大优势可以继承原生构造函数，参见下文“原生构造函数的继承”
+
+#### super关键词：
+作为函数使用：  
+- super指的是父类的构造函数，但是返回的是子类的实例对象(即this指向子类的实例对象)
+- 在子类的constructor方法中必须先调用super()，否则会报错
+- super作为函数使用，只能用在constructor方法中，用在其他地方会报错
+
+作为对象使用：  
+1. super作为对象时，在普通方法中指向父类的原型对象；在静态方法中指向父类
+2. 在子类的静态方法中通过super调用父类的方法时，方法内部的this指向**当前的子类**。见示例一
+3. ES6 规定，在子类普通方法中通过super调用父类的方法时，方法内部的this指向**当前的子类实例**。
+4. 如果用super对某个属性赋值，由于this指向当前子类实例，赋值的属性会变成子类实例的属性，见示例二
+5. 使用super时必须显式指定是作为函数使用还是对象使用，否则引擎会报错
+6. 由于对象总是继承其他对象，可以在任意一个对象中使用super关键字，见示例三  
+上面的2，3，4点是super比较惊奇的地方[super的实现](https://segmentfault.com/a/1190000015565616)
+示例一：
+```javascript
+class A {
+  constructor() {
+    this.x = 1;
+  }
+  static print() {
+    console.log(this.x);
+  }
+}
+class B extends A {
+  constructor() {
+    super();
+    this.x = 2;
+  }
+  static m() {
+    super.print();
+  }
+}
+// 为子类B赋予静态属性x
+B.x = 3;
+B.m() // 3
+```
+示例二：
+```javascript
+class A {
+  constructor() {
+    this.x = 1;
+  }
+}
+class B extends A {
+  constructor() {
+    super();
+    this.x = 2;
+    super.x = 3;
+    // 表明super.x并没有为A.prototype.x赋值
+    console.log(super.x); // undefined
+    console.log(this.x); // 3
+  }
+}
+let b = new B();
+```
+示例三：
+```javascript
+var obj={
+    toString(){
+        return "myObject:"+super.toString();
+    }
+};
+obj.toString()//myObject:[object object]
+```
+#### class的prototype和__proto__
+*虽然class的本质是函数，但与函数的prototype和`__proto__`有些许差别*  
+类的继承是按照下面模式：  
+```javascript
+Object.setPrototypeOf=function(obj,proto){
+    obj.__proto__=proto;
+    return obj;
+}
+```
+- B.`__proto__`===A
+- B.prototype.`__proto__`===A.prototype
+- A作为一个基类不存在任何继承就当做一个普通函数，即A.`__proto__`===Function.prototype, A.prototype.`__proto__`===Object.prototype
+```javascript
+class A {}
+class B extends A {}
+// Object.setPrototypeOf(B,A)
+B.__proto__ === A // true
+// Object.setPrototypeOf(B.prototype,A.prototype)
+B.prototype.__proto__ === A.prototype // true
+```
+#### 原生构造函数的继承
+- ES5中**不允许**继承原生构造函数，因为原生构造函数的this不能绑定，导致子类无法获取原生构造函数的内部属性
+- ES6中**允许**即继承原生构造函数，因为ES6的继承机制是先新建父类的实例对象this，然后再用子类修改子类构造函数；这与ES5中先新建子类的实例对象this，再把父类的属性添加到子类上的继承机制完全不同。
+- extends关键字后面可以有多种类型值(例如：带有prototype属性的函数)
+- 继承原生构造函数意味着可以自定义数据结构，见示例一；但是注意继承Object的子类有一个行为差异，见示例二。  
+示例一：自定义一个带有版本控制功能的数组
+```javascript
+class VersionedArray extends Array{
+    constructor(){
+        super();
+        this.history=[[]];
+    }
+    // 每提交一次(即每执行一次commit())，将当前数组添加到history数组中
+    commit(){
+        this.history.push(this.slice());
+    }
+    // 每次回退(即每执行一次revert())，将当期数组恢复到最后一次提交的数组
+    revert(){
+        this.splice(0,this.length,...this.history[this.history.length-1]);
+    }
+}
+```
+示例二：
+```javascript
+class NewObj extends Object{
+    constructor(){
+        // arguments对象的length属性反应实参的个数，函数的length属性反应形参的个数
+        super(...arguments);
+    }
+}
+var o=new NewObj({attr:'hello'});
+// o.attr=undefined 表明实例对象o里并不存在attr属性
+o.attr==='hello'//false
+```
+- ES6 改变了Object构造函数的行为，一旦发现Object方法不是通过new Object()这种形式调用，ES6 规定Object构造函数会忽略参数。
+---
+## 闭包
+概念：  
+闭包是由函数以及创建该函数的词法环境组合而成。**这个环境包含了这个闭包创建时所能访问的所有局部变量**
+
+特点：  
+1. 闭包可以让你从内部函数访问外部函数作用域
+2. 在JS中，函数在每次创建时生成闭包
+3. 闭包是JS语言特有的，因为可以在函数内部声明函数，这是传统编程语言不具有的特性
+4. 每个闭包都是引用自己的词法作用域
+
+闭包面试经典题：
+```javascript
+for(var i=1;i<=5;i++){
+    setTimeout(function timer(){
+        console.log(i);
+    },i*1000);
+    // 最终输出五次6
+}
+```
+原因：由于var变量具有提升作用，所以`i`是一个全局变量，timer()执行时是从全局环境中获取`i`的值  
+解决方法一：
+```javascript
+for(var i=1;i<=5;i++){
+    (function(j){
+        setTimeout(function timer(){
+            console.log(j);
+        },j*1000);
+    })(i);
+}
+// timer函数的作用域链：timer>Closure{j:1}>Global
+```
+在立即执行函数中创建了timer这个闭包，timer闭包引用的词法环境是局部变量`j`，而在每次循环时`j=i`
+
+解决方法二：
+```javascript
+for(var i=1;i<=5;i++){
+    setTimeout(function timer(j){
+        console.log(j);
+    },i*1000,i);
+}
+```
+每次循环的`i`会当做timer()的参数传入，这里的timer不是闭包(可以通过在控制台打印timer函数验证)
+
+解决方法三：
+```javascript
+for(let i=1;i<=5;i++){
+    setTimeout(function timer(){
+        console.log(i);
+    },i*1000);
+}
+```
+使用ES6引入的let关键词，它是块级作用域，每次创建timer闭包时引用的都是独立的词法环境  
+[在循环中创建闭包常见错误](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Closures)
+
+性能考量：  
+> 如果不是某些特定任务需要使用闭包，在其它函数中创建函数是不明智的，因为闭包在处理速度和内存消耗方面对脚本性能具有负面影响。
+---
 ## 异步
 1. 单线程模型：  
 众所周知，JavaScript只在一个线程上运行，但是JavaScript引擎有多个线程，单个脚本只能在一个线程上运行(称为主线程)，其他线程都是在后台配合。而且JavaScript语言本身并不慢，慢的是I/O操作，比如等待Ajax请求返回结果，因此引入了事件循环机制(Event Loop)  
@@ -909,103 +1418,6 @@ readyStatus状态值如下：
 [了解XMLHttpRequest API](https://developer.mozilla.org/zh-CN/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest)
 
 ---
-## 闭包
-概念：  
-闭包是由函数以及创建该函数的词法环境组合而成。**这个环境包含了这个闭包创建时所能访问的所有局部变量**
-
-特点：  
-1. 闭包可以让你从内部函数访问外部函数作用域
-2. 在JS中，函数在每次创建时生成闭包
-3. 闭包是JS语言特有的，因为可以在函数内部声明函数，这是传统编程语言不具有的特性
-4. 每个闭包都是引用自己的词法作用域
-
-闭包面试经典题：
-```javascript
-for(var i=1;i<=5;i++){
-    setTimeout(function timer(){
-        console.log(i);
-    },i*1000);
-    // 最终输出五次6
-}
-```
-原因：由于var变量具有提升作用，所以`i`是一个全局变量，timer()执行时是从全局环境中获取`i`的值  
-解决方法一：
-```javascript
-for(var i=1;i<=5;i++){
-    (function(j){
-        setTimeout(function timer(){
-            console.log(j);
-        },j*1000);
-    })(i);
-}
-```
-在立即执行函数中创建了timer这个闭包，timer闭包引用的词法环境是局部变量`j`，而在每次循环时`j=i`
-
-解决方法二：
-```javascript
-for(var i=1;i<=5;i++){
-    setTimeout(function timer(j){
-        console.log(j);
-    },j*1000,i);
-}
-```
-每次循环的`i`会当做timer()的参数传入(timer还是个闭包，只是没有获取外部环境的变量，获取的是它函数内部自己的变量)
-
-解决方法三：
-```javascript
-for(let i=1;i<=5;i++){
-    setTimeout(function timer(){
-        console.log(i);
-    },i*1000);
-}
-```
-使用ES6引入的let关键词，它是块级作用域，每次创建timer闭包时引用的都是独立的词法环境  
-[在循环中创建闭包常见错误](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Closures)
-
-性能考量：  
-> 如果不是某些特定任务需要使用闭包，在其它函数中创建函数是不明智的，因为闭包在处理速度和内存消耗方面对脚本性能具有负面影响。
-## 变量提升(var,let,const)
-提升：  
-是一种将变量和函数的声明移到函数作用域(如果不在任何函数内的话就是全局作用域)最顶部的机制。  
-注意：**从概念的字面意义上说，“变量提升”意味着变量和函数的声明会在物理层面移动到代码的最前面，但这么说并不准确。实际上变量和函数声明在代码里的位置是不会动的，而是在编译阶段被放入内存中**
-
-暂时性死区：  
-在声明变量之前使用变量，JS会抛出异常；let和const存在暂时性死区，var不存在暂时性死区  
-注意：**let和const也存在提升，只是因为暂时性死区的原因导致不能在声明它之前使用**
-
-- 函数提升优先于变量提升，**函数提升会把整个函数挪到作用域顶部，变量提升只会把声明挪到作用域顶部**
-- var 存在提升，我们能在声明之前使用。let、const 因为暂时性死区的原因，不能在声明前使用
-- var 在全局作用域下声明变量会导致变量挂载在 window 上，其他两者不会
-- let 和 const 作用基本一致，但是后者声明的变量不能再次赋值并且在声明时就要初始化
-- JS中鼓励先声明再使用，符合逻辑和代码维护  
-```javascript
-var a = 1
-let b = 1
-const c = 1
-// 在全局作用域中声明let,const变量不会挂载到window对象上，这一点和var不同
-console.log(window.b) // undefined
-console.log(window.c) // undefined
-function test(){
-// 这里的变量a在编译阶段虽然存在提升但是因为“暂时性死区”原因不能在声明之前使用
-// 这里的变量a是块级作用域，和全局作用域的变量a互不影响，因此可以使用相同的变量名
-  console.log(a)
-  let a
-}
-test()
-```
-JS中存在提升的原因：为了解决函数间互相调用的情况，见示例：  
-```javascript
-// 如果不存在提升，那么test2()将永远无法执行
-function test1() {
-    test2()
-}
-function test2() {
-    test1()
-}
-test1()
-```
-
----
 ## 浅拷贝&&深拷贝
 - 在JS中对于原始数据类型拷贝的是原始值，而对象拷贝的是引用值，所以拷贝对象容易使两个对象互相影响
 - 对象分浅拷贝和深拷贝，对象的浅拷贝只复制一层，对象的深拷贝复制多层
@@ -1058,253 +1470,6 @@ newObj.b.c.a.x;
 [参考深拷贝](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bed40d951882545f73004f6)
 
 ---
-## 原型&&原型链
-- Object.prototype和Function.prototype是JS引擎创建的两个特殊对象
-- 所有实例对象都是由构造器生成，它的__proto__属性隐式指向原型对象，并通过__proto__形成原型链
-- 函数比较特殊，即有__proto__属性，也有prototype属性；__proto__指向Function.prototype；prototype属性指向该函数所生成的实例对象的原型对象
-- Function.prototype.__ proto__ ===Object.prototype，Object.prototype是所有对象的终点  
-![原型链](./img/prototypeChain.png)
-## class的基本语法
-- class本质上是函数，内部定义的方法前面不需要加"function"关键词，方法之间不需要","分隔，内部定义的方法不可枚举，与原型继承不同
-- constructor方法是class默认的方法，通过new创建实例对象时自动调用，默认返回实例对象；如果没有显式定义，JS引擎会自动创建一个空的constructor；
-- 实例的属性和方法必须显式定义在实例对象上(即定义在this对象上)，否则都定义在原型上
-- 实例属性新的写法是定义在class的顶层，并且前面不用加this，只存在属性名和属性值(千万别以为属性是定义在原型上的)
-- class的内部可以定义属性的getter和setter，并且存/取值函数是定义在属性的属性描述对象上
-```javascript
-class A{
-    constructor(name){
-        this.name=name;
-    }
-    // 这里的x是A.prototype的属性，区别于x='hello'(实例对象上的属性)
-    get x(){
-        return "hello";
-    }
-    set x(value){
-        console.log('setter:'+value)
-    }
-}
-var descriptor=Object.getOwnPropertyDescriptor(A.prototype,x);
-get in descriptor  //true
-set in descriptor  //true
-```
-- class的属性名可以采用表达式
-```javascript
-var methodName="getValue";
-class A{
-    [methodName](){/*...*/}
-}
-```
-- class也可以采用表达式，可以写出立即执行的class
-```javascript
-// class采用表达式，Me表示类名，只能在class内部使用(Me.name)，在外部无法使用；如果内部用不到可以省略
-var person = new class Me{
-  constructor(name) {
-    this.name = name;
-  }
-  sayName() {
-    console.log(this.name);
-  }
-}('张三');
-person.sayName(); // "张三"
-```
-- 静态方法和静态属性只能通过类名直接调用；静态方法中的this指向类，而不是实例对象；静态方法和静态属性可以通过子类继承，也可以通过super对象调用
-- ES6不支持私有属性和私有方法，只能通过变通方法达到目的(参考阮一峰的《ES6标准入门》class基本语法章节)
-- ES6为new命令添加了new.target属性，详情参考《ES6标准入门》
-### 注意事项
-- 类和模块内部自动采用严格模式
-- class不存在提升(即不能在定义class之前使用class)
-- this的指向，见示例
-```javascript
-class Logger {
-  printName(name = 'there') {
-    this.print(`Hello ${name}`);
-  }
-
-  print(text) {
-    console.log(text);
-  }
-}
-const logger = new Logger();
-// 对象解构赋值，对象的原型的属性和方法也能通过对象解构赋值
-const { printName } = logger;
-// 这时单独使用printName()，this指向该方法运行时的环境(即class的内部，不是全局环境)
-printName(); // TypeError: Cannot read property 'print' of undefined
-```
-[更多class的基本语法](http://es6.ruanyifeng.com/#docs/class)
-## 原型继承和class继承
-常考面试题：原型如何实现继承？class如何实现继承？class本质是什么？
-### 原型继承
-组合继承：(最常用的继承方式)  
-- 核心方式是在子类的构造函数中通过**Parent.call(this)继承父类的属性**，然后改变子类的原型为**new Parent()来继承父类的函数**
-- 优点在于构造函数可以传参，不会与父类引用属性共享，可以复用父类的函数
-- 缺点就是在继承父类函数的时候调用了父类构造函数，导致**子类的原型**上多了不需要的父类属性，存在内存上的浪费。并且子类实例无法找到正确的构造函数
-```javascript
-function Parent(value){
-    this.val=value;
-}
-Parent.prototype.getValue=function(){
-    console.log(this.val);
-}
-function Child(value){
-    // 在new Child()时就已经继承了父类的属性
-    Parent.call(this,value)
-}
-// 调用了父类构造函数，使得Child.prototype上也有父类的属性，造成内存的浪费
-Child.prototype=new Parent();
-// child.constructor=function Parent(),不能找到child的正确构造函数
-const child=new Child(1);
-```
-
-寄生组合继承：(优化组合继承的缺点)
-```javascript
-function Parent(value){
-    this.val=value;
-}
-Parent.prototype.getValue=function(){
-    console.log(this.val);
-}
-function Child(value){
-    Parent.call(this,value);
-}
-// Child.prototype={constructor:Child},使得原型上没有父类Parent的属性了,并且还能找到正确的构造函数
-Child.prototype=Object.create(Parent.prototype,{
-    constructor:{
-        value:Child,
-        enumerable: false,
-        writable: true,
-        configurable: true
-    }
-});
-// child.constructor=function Child()
-const child=new Child(1);
-```
-### Class继承
-- 原型继承，实质是**先创造子类的实例对象，然后赋值给this，然后再将父类的属性和方法添加到this上面（Parent.call(this)）**
-- class的继承，实质是**先将父类实例对象的属性和方法，加到this上面（所以必须先调用super方法），然后再用子类的构造函数修改this**
-- class的继承机制(ES6继承)的一大优势可以继承原生构造函数，参见下文“原生构造函数的继承”
-
-#### super关键词：
-作为函数使用：  
-- super指的是父类的构造函数，但是返回的是子类的实例对象(即this指向子类的实例对象)
-- 在子类的constructor方法中必须先调用super()，否则会报错
-- super作为函数使用，只能用在constructor方法中，用在其他地方会报错
-
-作为对象使用：  
-1. super作为对象时，在普通方法中指向父类的原型对象；在静态方法中指向父类
-2. 在子类的静态方法中通过super调用父类的方法时，方法内部的this指向**当前的子类**。见示例一
-3. ES6 规定，在子类普通方法中通过super调用父类的方法时，方法内部的this指向**当前的子类实例**。
-4. 如果用super对某个属性赋值，由于this指向当前子类实例，赋值的属性会变成子类实例的属性，见示例二
-5. 使用super时必须显式指定是作为函数使用还是对象使用，否则引擎会报错
-6. 由于对象总是继承其他对象，可以在任意一个对象中使用super关键字，见示例三  
-上面的2，3，4点是super比较惊奇的地方[super的实现](https://segmentfault.com/a/1190000015565616)
-示例一：
-```javascript
-class A {
-  constructor() {
-    this.x = 1;
-  }
-  static print() {
-    console.log(this.x);
-  }
-}
-class B extends A {
-  constructor() {
-    super();
-    this.x = 2;
-  }
-  static m() {
-    super.print();
-  }
-}
-// 为子类B赋予静态属性x
-B.x = 3;
-B.m() // 3
-```
-示例二：
-```javascript
-class A {
-  constructor() {
-    this.x = 1;
-  }
-}
-class B extends A {
-  constructor() {
-    super();
-    this.x = 2;
-    super.x = 3;
-    // 表明super.x并没有为A.prototype.x赋值
-    console.log(super.x); // undefined
-    console.log(this.x); // 3
-  }
-}
-let b = new B();
-```
-示例三：
-```javascript
-var obj={
-    toString(){
-        return "myObject:"+super.toString();
-    }
-};
-obj.toString()//myObject:[object object]
-```
-#### class的prototype和__proto__
-*虽然class的本质是函数，但与函数的prototype和`__proto__`有些许差别*  
-类的继承是按照下面模式：  
-```javascript
-Object.setPrototypeOf=function(obj,proto){
-    obj.__proto__=proto;
-    return obj;
-}
-```
-- B.`__proto__`===A
-- B.prototype.`__proto__`===A.prototype
-- A作为一个基类不存在任何继承就当做一个普通函数，即A.`__proto__`===Function.prototype, A.prototype.`__proto__`===Object.prototype
-```javascript
-class A {}
-class B extends A {}
-// Object.setPrototypeOf(B,A)
-B.__proto__ === A // true
-// Object.setPrototypeOf(B.prototype,A.prototype)
-B.prototype.__proto__ === A.prototype // true
-```
-#### 原生构造函数的继承
-- ES5中**不允许**继承原生构造函数，因为原生构造函数的this不能绑定，导致子类无法获取原生构造函数的内部属性
-- ES6中**允许**即继承原生构造函数，因为ES6的继承机制是先新建父类的实例对象this，然后再用子类修改子类构造函数；这与ES5中先新建子类的实例对象this，再把父类的属性添加到子类上的继承机制完全不同。
-- extends关键字后面可以有多种类型值(例如：带有prototype属性的函数)
-- 继承原生构造函数意味着可以自定义数据结构，见示例一；但是注意继承Object的子类有一个行为差异，见示例二。  
-示例一：自定义一个带有版本控制功能的数组
-```javascript
-class VersionedArray extends Array{
-    constructor(){
-        super();
-        this.history=[[]];
-    }
-    // 每提交一次(即每执行一次commit())，将当前数组添加到history数组中
-    commit(){
-        this.history.push(this.slice());
-    }
-    // 每次回退(即每执行一次revert())，将当期数组恢复到最后一次提交的数组
-    revert(){
-        this.splice(0,this.length,...this.history[this.history.length-1]);
-    }
-}
-```
-示例二：
-```javascript
-class NewObj extends Object{
-    constructor(){
-        // arguments对象的length属性反应实参的个数，函数的length属性反应形参的个数
-        super(...arguments);
-    }
-}
-var o=new NewObj({attr:'hello'});
-// o.attr=undefined 表明实例对象o里并不存在attr属性
-o.attr==='hello'//false
-```
-- ES6 改变了Object构造函数的行为，一旦发现Object方法不是通过new Object()这种形式调用，ES6 规定Object构造函数会忽略参数。
-
----
 ## Array.prototype的方法
 ### Array.prototype方法的返回值的几种情况
 1. 返回新数组:
@@ -1313,6 +1478,17 @@ o.attr==='hello'//false
     > 对于有些方法修改原始数组，返回值一般都是修改的值，例如splice(),shift(),pop(),push()
 3. 不返回任何值(即返回undefined)，例如forEach()
 4. 其他，例如indexof()返回1或-1
+### Array.isArray()
+- `Array.isArray()`检测一个值是否为数组，它不考虑这个数组是在哪个全局执行环境中创建的
+- `instancof`操作符检测数组的问题在于，它假定只有一个全局执行环境。例如，一个网页中包含多个框架，实际上就包含多个全局执行环境，从而存在
+多个版本的Array构造函数如果你从一个框架向另一个框架传入一个数组，那么传入的数组与在第二个框架中原生创建的数组分别具有各自不同的构造函数。
+### Array的转换方法
+- Array的转换方法有`toLocalString()`,`toString()`,`valueOf()`,`join()`
+- 调用数组的`toString()`会返回以逗号隔开的数组每一项的字符串的拼接的字符串(实际上会调用数组每一项的toString方法)，`valueOf()`会返回原数组
+- `toLocaleString()`方法经常也会返回与`toString()`和`valueOf()`方法相同的值，但也不总是如。而与前两个方法唯一的不同之处在于，这一次为了取得每一项的值，调用的是每一项的`toLocaleString()`方法，而不是`toString()`方法。
+- `join()`只接受一个参数(分隔符的字符串)，如果不给 join()方法传入任何值，或者给它传入 undefined，则使用逗号作为分隔符。
+- 如果数组中的某一项的值是`null`或者`undefined`，那么该值在`join()`、`toLocaleString()`、`toString()`和`valueOf()`方法返回的结果中
+以空字符串表示。
 ### Array.prototype.map()
 语法：
 ```javascript
@@ -1352,24 +1528,60 @@ Array.prototype.filter(callback(currentVal[,index[,array]]){
 ```javascript
 Array.prototype.reduce(callback(accumulator,currentVal[,index[,array]]){}[,initialVal])
 ```
-
 ---
-## 对象的扩展
-### 属性访问
-- **点记法**后面跟的是一个**有效的JavaScript标识符**；**方括号法**后面跟的是一个**字符串**，这也意味着非字符串对象会通过`toString()`方法转为相应的字符串
-- **对象的属性名**必须是**字符串**或者`Symbol`，任何非字符串对象都无法作为对象的键名，会通过`toString()`转为相应的字符串
-- ES6中引入了*计算属性名*，允许在`[]`中放入表达式，计算结果作为属性名，如下示例：
-```javascript
-var param="size";
-var foo={
-    [param]:12,
-    ["mobile"+param.charAt(0)+param.slice(1)]:4
-}
-// foo={size:12,mobileSize:4}
+# DOM基础知识
+## DOM事件流
+结论：  
+> 下面例子的js代码对应的html
+```html
+<div id="grandpa">
+    祖父元素
+    <div id="father">
+        父亲元素
+        <div id="son">
+            儿子元素
+        </div>
+    </div>
+</div>
 ```
-### 对象字面量表示法和JSON的区别
-- JSON只允许`"property":value`的语法形式的属性定义。属性名必须使用双引号括起来，并且属性定义不允许使用简便语法
-- JSON中属性值只允许是字符串，数组，数字，null，true,false或其他JSON对象
-- JSON中不允许将值设置为函数
-- `Date`等对象，经过`JSON.parse()`处理后，会变成字符串
-- `JSON.parse()`不会处理计算的属性名，会当错误抛出
+1. `onEventType`重复监听同一个元素会被覆盖，而`addEventListener()`重复监听同一个元素不会被覆盖；
+> 这就是`addEventListener`优于`onEventType`的地方，可以为一个元素监听同一事件处理多次不同的事件程序
+2. 目标元素不区分“事件捕获”和“事件冒泡”，被监听几次就执行几次，且按监听器顺序执行
+```javascript
+// 这里示例证明上例1,2的结论
+son.onclick=function(e){
+    console.log("儿子元素");//第一个打印
+};
+son.addEventListener("click",function(){
+    console.log("儿子元素");//第二个打印
+},false);
+son.addEventListener("click",function(){
+    console.log("儿子元素");//第三个打印
+},true);
+```
+3. 除目标元素之外的元素(这里称为目标元素的上级元素)，“事件的捕获”始终会先于“事件冒泡”发生；如果目标的上级元素在**同一个事件阶段被监听多次**，则按监听器的顺序执行，例如：
+```javascript
+// 这里只关注“父亲元素”的打印顺序，这里证明了1,3结论
+father.onclick=function(e){
+    console.log("父亲元素");//第二个打印
+};
+son.onclick=function(e){
+    console.log("儿子元素");
+};
+grandpa.onclick=function(){
+    console.log("祖父元素");
+};
+grandpa.addEventListener("click",function(){
+    console.log("祖父元素");
+},false);
+father.addEventListener("click",function(){
+    console.log("父亲元素");//第三个打印
+},false);
+father.addEventListener("click",function(){
+    console.log("父亲元素");//第四个打印
+},false);
+father.addEventListener("click",function(){
+    console.log("父亲元素");//第一个打印
+},true);
+```
+4. `onEventType`处理"事件冒泡阶段"，不处理"事件捕获阶段"；`addEventListener()`可以通过第三个可选参数选择处理"事件捕获"或"事件冒泡"，false代表冒泡，true代表捕获，默认为false
