@@ -1,7 +1,10 @@
 # JS基础知识总结
 ## 区别querySelector()和getElementsByClassName()
 - document.querySelector(selector)是返回选择器匹配的第一个元素，并且selector是选择器字符串
+- document.querySelectorAll(selector)返回的是一个`NodeList`
+    > `document.querySelectorAll`不能动态获取节点的背后本质是，它返回一个`NodeList`,目前只有node.childNodes返回的是一个动态集合，其他返回的NodeList都是静态集合
 - document.getElementsByClassName(string)返回一个NodeList里面包含所匹配的元素，string为class的属性值
+    > `document.getElementsByClassName`和`document.getElementsByTagName`获取的是`HTMLCollection`，它是一个动态集合，与NodeList主要的区别是它只能包含HTML元素节点
 ## 字符串的扩展
 ### unicode
 - unicode码规定每个字符对应一个数字，unicode v1.0用2个字节表示所有字符(0~65535)
@@ -325,9 +328,9 @@ typeof age;//undefined
 - 实际上，undefined值是null的派生值，因此ECMA-262规定对它们的相等性测试要返回true(注意，仅仅针对于宽松相等运算符`==`)
 - undefined和null的用途完全不同。我们不必对一个变量显式地初始化为undefined，但是对于要保存对象还未真正保存对象的变量使用null初始化，
   这样不仅可以体现null作为空对象指针的惯例，也有助于区分null和undefined
-#### boolean
+#### Boolean
 - JS中的所有数据类型都有与Boolean类型值等价的值，要将一个值转换为其对应的Boolean类型值，可以调用`Boolean()`函数
-#### number
+#### Number
 - 整数可以用十进制、八进制(字面值前导为0，后面如果超出数值范围，将当做十进制解析，在严格模式下八进制的字面量是无效的，会抛出错误)、十六进制(字面值
 前导为0x)；在进行算术运算时，所有的八进制和十六进制表示的数值最终都将被转化成十进制
 - 由于保存浮点数值需要的内存是整数的两倍，因此JS会不时地将浮点数值转为整数数值(针对小数点后面没有任何数字和浮点数本来就表示整数，如1.0)；对于极大或
@@ -358,16 +361,20 @@ NaN的操作都会返回NaN，其二是NaN跟任何值都不相等，包括它�
     - parseInt()能够识别整数格式(即十进制，八进制，十六进制)，但在识别八进制时，ECMAScript3和ECMAScript5有分歧(ECMAScript5不具备识别八进制能力)
     - parseInt()能接受第二个参数(指定转换的基数)，默认为10
 - `parseFloat()`解析字符串规则同`parseInt()`类似，区别在于`parseFloat()`将第一个小数点视为有效数字字符，没有第二个参数，只解析十进制，因此转换十     六进制时返回0
-#### string
+#### String
 - JS中除了`null`和`undefined`的所有数据类型的值几乎都有toString()方法，该方法将值转为string类型
 - `toString()`方法可以接受一个参数，表示*输出数值的基数*，没有参数默认输出数值的基数为10
 - `String()`可以将任何类型的值转为字符串，其转换规则如下：
     - 如果值有toString()方法，调用toString()方法(没有参数)并返回相应结果
     - 如果值是null，则返回"null"
     - 如果值是undefined，则返回"undefined"
+#### Symbol
+- Symbol类型的值不能与其他类型进行运算(因为Symbol类型的值不能隐式转换为String类型)，但是可以使用`String()`和`toString()`显式转为字符串，也可以`Boolean()`转为布尔值，但是不能转为数值
+- `Symbol()`方法创建的Symbol类型的值没有登记机制，`Symbol.for(String)`会从全局环境中搜索有没有以该参数作为名称的Symbol值，如果有则返回该Symbol值，如果没有则新创建一个Symbol值，并将其注册到全局中，`Symbol.keyFor()`返回一个已登记的Symbol类型值的key
 ### 复合数据类型(Object)
-- 从技术角度讲，ECMA-262 中对象的行为不一定适用于JavaScript中的其他对象。浏览器环境中的对象，比如 BOM 和 DOM 中的对象，都属于宿主对象，因为它们是
-由宿主实现提供和定义的。ECMA-262 不负责定义宿主对象，因此宿主对象可能会也可能不会继承 Object。
+- 从技术角度讲，ECMA-262 中对象的行为不一定适用于JavaScript中的其他对象。浏览器环境中的对象，比如 BOM 和 DOM 中的对象，都属于宿主对象，因为它们是由宿主实现提供和定义的。ECMA-262 不负责定义宿主对象，因此宿主对象可能会也可能不会继承 Object。
+- 包装器对象与普通对象的区别在于，包装器对象的`__proto__`为对应构造函数，并且具有`[[PrimitiveValue]]`属性，而普通构造函数创建的对象的`__proto__`为Object，没有`[[PrimitiveValue]]`属性(不考虑继承)  
+![包装器对象与普通对象原型的区别](img/包装器对象和普通对象原型的区别.png)
 ----
 
 ## JS中的运算符
@@ -514,7 +521,7 @@ rest参数：
 ### == vs ===
 面试经典题：[] == ![]  
 "=="在比较时涉及到类型转换，"==="不会涉及类型转换；在使用"=="时要注意操作数的类型：  
-1. 如果都是原始类型(string/number/boolean，除去特殊值null/undefined/NaN)，两者都转为数值进行判断；
+1. 如果都是原始类型(string/number/boolean，除去特殊值null/undefined/NaN)，两者都转为数值进行判断;
 2. 特殊值的话，null/undefied/NaN 和任何值(不包括自身) == 都为 false；null 和 undefined == 为 true，分别与自身 == 也为true；NaN 与自身 == 为 false；
 3. 原始类型和引用类型进行比较，原始类型是数值引用类型转为数值，原始类型是字符串引用类型转为字符串，原始类型是布尔值两者都转为数值；
 4. 引用类型和引用类型进行比较，比较的是内存地址。  
@@ -567,13 +574,25 @@ function f() { console.log('I am outside!'); }
 
 暂时性死区：  
 在声明变量之前使用变量，JS会抛出异常；let和const存在暂时性死区，var不存在暂时性死区  
-注意：**let和const也存在提升，只是因为暂时性死区的原因导致不能在声明它之前使用**
 
 - 函数提升优先于变量提升，**函数提升会把整个函数挪到作用域顶部，变量提升只会把声明挪到作用域顶部**
+- ES6声明变量有6中方式，var,function,let,const,import,class
 - var 存在提升，我们能在声明之前使用。let、const 因为暂时性死区的原因，不能在声明前使用
-- var 在全局作用域下声明变量会导致变量挂载在 window 上，其他两者不会
+- var命令和function命令声明的全局变量，依旧是顶层对象的属性；另一方面规定，let命令、const命令、class命令声明的全局变量，不属于顶层对象的属性
 - let 和 const 作用基本一致，但是后者声明的变量不能再次赋值并且在声明时就要初始化
 - JS中鼓励先声明再使用，符合逻辑和代码维护  
+```javascript
+ let b=3;
+for(var i=0;i<3;i++){
+    let b=4;
+    console.log(b);//b=4
+}
+for(var i=0;i<3;i++){
+    console.log(b);//报错，不能在初始化变量之前使用变量
+    let b=4;
+}
+// 上面两个for循环能证明let变量也有提升，只是存在暂时性死区
+```
 ```javascript
 var a = 1
 let b = 1
@@ -660,7 +679,18 @@ date1=new Date(2020,1,1,11,9);
 - 在全局执行环境中，不管是否是严格模式，this都指定为全局对象
 - 在函数执行环境中，严格模式默认指定undefined，非严格模式指定为全局对象
 - 箭头函数，this 关键字指向的是它当前周围作用域(简单来说是包含箭头函数的常规函数，如果没有常规函数的话就是全局对象)
-- `this`不再函数中时，指向全局对象  
+- `this`不再函数中时，指向全局对象
+- 函数中的`this`只会在当前作用域搜索，不会沿作用域链向上搜索(arguments对象也是如此)
+- 箭头函数中根本不存在`this`对象和`arguments`对象，所以this指向的是外层代码块的this对象，并且箭头函数中的this是在定义时确定的
+```javascript
+document.onclick=function(){
+    console.log(this);//这里this指向document对象
+    function show(){
+        console.log(this);//这里的this只在当前作用域查找，因此在非严格模式下为Window对象，严格模式下为undefined
+    }
+    show();
+}
+```
 ```javascript
 var age=13;
 var obj={
@@ -672,10 +702,30 @@ obj.age // 13
 > 在箭头函数中如果将this传递给call、bind、或者apply，它将被忽略。不过你仍然可以为调用添加参数，不过第一个参数（thisArg）应该设置为null。bind函数只会生效一次；箭头函数没有prototype属性
 ------
 ## 对象的扩展
-### 属性访问
-- **点记法**后面跟的是一个**有效的JavaScript标识符**；**方括号法**需要计算，后面跟的是一个**字符串**，这也意味着非字符串对象会
-通过`toString()`方法转为相应的字符串
-- **对象的属性名**必须是**字符串**或者`Symbol`，任何非字符串对象都无法作为对象的键名，会通过`toString()`转为相应的字符串
+### 属性访问("."和"[]")
+对象的属性名称必须是**字符串**和**Symbol**,任何非字符串对象都无法作为对象的键名，会通过`toString()`转为相应的字符串。这意味着对象的属性名称并不是一个变量存储相应的属性值，我们在创建字面量对象的时候，对象的属性名称我们可以加引号，也可以不加，但最终JS引擎会把它转为字符串
+
+点访问("."):  
+- **点记法**后面跟的是一个**有效的JavaScript标识符**,它不需要计算，而是把这个标识符当做属性名称去访问对象的属性值
+
+方括号访问("[]"):  
+- **方括号法**需要计算，如果是变量，则通过变量的值去访问对象的属性，这也意味变量值为非字符串对象会通过`toString()`方法转为相应的字符串；如果是字符串，直接去匹配对象中是否有这个键名
+```javascript
+ var obj={};
+var person={
+    "name":"Allen",
+    age: 18,
+    "fn":function(){
+        console.log("对象的属性名称并不是一个变量");
+    }
+}
+person[obj]="对象";//通过"[]"把一个对象作为person的键名，最终会转为"[object Object]"
+console.log(person.obj);//根据"."访问规则，person对象中并没有"obj"这个属性名称，因此为undefined
+console.log(person[obj]);//根据"[]"规则，把obj变量转为字符串"[object Object]",因此打印"对象"
+console.log(person["[object Object]"]);//直接匹配person的"[objec Object]"键名，因此打印"对象"
+console.log(person["fn"]());//证明了对象的键名并不是变量
+```
+ES6引入的计算属性名:  
 - ES6中引入了*计算属性名*，允许在`[]`中放入表达式，计算结果作为属性名，如下示例：
 ```javascript
 var param="size";
@@ -688,6 +738,29 @@ var foo={
 ### 属性描述符
 - 对象的属性目前存在两种属性描述符：**数据描述符**和**存取描述符**，属性只能是这两种属性描述符其中之一，不能同时拥有  
 - 如果一个属性描述符不具有`value,writable,get和set`中的任何一个，那么它将被认为是**数据描述符**
+- 如果一个原型对象的属性为`writable`为false的**数据描述符**或**存取描述符**，那么该属性无法被子对象覆盖
+```javascript
+var value;
+// 为myclass.prototype定义一各键名为"x"的存取属性
+Object.defineProperty(myclass.prototype, "x", {
+    get() {
+        return value;
+    },
+    set(x) {
+        value = x;
+    },
+});
+var a = new myclass();
+a.x = 1;//Object.getOwnPropertyNames(a)返回[]
+// 为myclass.prototype定义一各键名为"y"的数据属性
+Object.defineProperty(myclass.prototype,"y",{
+    value: 3,
+    writable: true
+});
+//writable为true时，Object.getOwnPropertyNames(a)返回["y"],
+//writable为false时，Object.getOwnPropertyNames(a)返回[],
+a.y=1;
+```
 数据描述符：  
 数据描述符是一个具有值的属性，具有以下属性特性(默认值是在使用Object.definePropert()定义属性的情况下)：  
 - `configurable`
@@ -706,6 +779,12 @@ var foo={
     > 一个给属性提供`getter`的方法，如果没有`getter`则为`undefined`。当访问该属性时，该方法会被执行，方法执行时没有参数传入，但是会传入this对象（由于继承关系，这里的this并不一定是定义该属性的对象）。
 - `set`
     > 一个给属性提供`setter`的方法，如果没有`setter`则为`undefined`。当属性值修改时，触发执行该方法。该方法将接受唯一参数，即该属性新的参数值。
+- 全局环境下，`a=1`中的`a`相当于window的一个属性，而`var a=1`中的`a`相当于定义的一个变量。
+```javascript
+a = 1; //a是其所在对象的一个属性, configurable与对象字面量定义属性一样，默认为true
+var a = 1; // 通过var或let初始化的，configurable属性默认为false
+```
+
 ### 对象字面量表示法和JSON的区别
 - JSON只允许`"property":value`的语法形式的属性定义。属性名必须使用双引号括起来，并且属性定义不允许使用简便语法
 - JSON中属性值只允许是字符串，数组，数字，null，true,false或其他JSON对象
@@ -745,6 +824,8 @@ friend.job //error
 ---
 ## class的基本语法
 - class本质上是函数，内部定义的方法前面不需要加"function"关键词，方法之间不需要","分隔，内部定义的方法不可枚举，与原型继承不同
+- class上的方法是不可枚举的，这一点与ES5不同
+- 实例的属性和方法必须显示的定义在实例本身上(即this对象)，这点和ES5保持一致
 - constructor方法是class默认的方法，通过new创建实例对象时自动调用，默认返回实例对象；如果没有显式定义，JS引擎会自动创建一个空的constructor；
 - 实例的属性和方法必须显式定义在实例对象上(即定义在this对象上)，否则都定义在原型上
 - 实例属性新的写法是定义在class的顶层，并且前面不用加this，只存在属性名和属性值(千万别以为属性是定义在原型上的)
@@ -806,7 +887,7 @@ class Logger {
 const logger = new Logger();
 // 对象解构赋值，对象的原型的属性和方法也能通过对象解构赋值
 const { printName } = logger;
-// 这时单独使用printName()，this指向该方法运行时的环境(即class的内部，不是全局环境)
+// 这时单独使用printName()，this指向该方法运行时的环境(class内部默认采用严格模式，所以this指向undefined)
 printName(); // TypeError: Cannot read property 'print' of undefined
 ```
 [更多class的基本语法](http://es6.ruanyifeng.com/#docs/class)
@@ -826,7 +907,7 @@ Parent.prototype.getValue=function(){
 }
 function Child(value){
     // 在new Child()时就已经继承了父类的属性
-    Parent.call(this,value)
+    Parent.apply(this,arguments)
 }
 // 调用了父类构造函数，使得Child.prototype上也有父类的属性，造成内存的浪费
 Child.prototype=new Parent();
@@ -843,7 +924,7 @@ Parent.prototype.getValue=function(){
     console.log(this.val);
 }
 function Child(value){
-    Parent.call(this,value);
+    Parent.apply(this,arguments);
 }
 // Child.prototype={constructor:Child},使得原型上没有父类Parent的属性了,并且还能找到正确的构造函数
 Child.prototype=Object.create(Parent.prototype,{
@@ -936,7 +1017,7 @@ Object.setPrototypeOf=function(obj,proto){
     return obj;
 }
 ```
-- B.`__proto__`===A
+- B.`__proto__`===A(注意，这里B.`__proto__`!==Function.prototype)
 - B.prototype.`__proto__`===A.prototype
 - A作为一个基类不存在任何继承就当做一个普通函数，即A.`__proto__`===Function.prototype, A.prototype.`__proto__`===Object.prototype
 ```javascript
@@ -1049,8 +1130,12 @@ Event Loop：CPU完全可以不管I/O操作，挂起处于等待中的任务，�
 任务队列：  
 它是用于存放被引擎挂起的异步任务(异步任务没有回调函数将不会进入队列)  
 PS：*实际上引擎会根据异步任务的类型将它存放在多个队列中*  
-事件循环：  
-事件循环是一种机制
+事件循环：(Event Loop)  
+- 事件循环里分微任务(本轮事件循环)，宏任务(下轮事件循环)，只需记住`setTimeout`,`setInterval`是宏任务
+    1. 只有主栈为空时，才开始执行队列任务
+    2. 检查任务对列中是否有可执行的**微任务**
+    3. 微任务执行完以后(即本轮事件循环完成)，开始执行**宏任务**(即开始下轮事件循环)
+    4. 在宏任务执行时又回到第2,3步，直到队列里面的宏任务全部执行完毕
 
 3. 异步操作的几种方式：  
     - 回调函数，优点是比较容易理解，实现；缺点是不利于代码的阅读和维护，各个部分之间高度耦合(coupling)，使得程序结构混乱、流程难以追踪(尤其多个回调函数嵌套使用)，而且每个任务只能指定一个回调函数
@@ -1251,7 +1336,11 @@ p2.then(result => console.log(result)).catch(error=>console.log(error));
 - 在resolve()和reject()执行完后，代码还是会继续执行。一般来说，resolve()和reject()执行完后创就完成了建promise对象的使命，后面的语句应该放在then()中执行
 为了避免意外，在resolve()和reject()前面加上return即可解决
 ## Promise.prototype.then()
-- then()会返回一个**全新的promise实例**
+- then()会返回一个**全新的promise实例**,这个全新的promise实例是在then()里面的回调函数**完成**以后改变状态
+    - 如果回调函数顺利执行，则promise{<resolve>}
+    - 如果回调函数执行过程中，遇到错误或者抛出错误，则promise{<rejected>}
+    - 如果回调函数返回一个promise{<rejected>}，则promise{<rejected>}
+    - 如果调用then()的promise为rejected，并且then()里没有rejectHanlder回调函数，则返回promise{<rejected>}
 - then()的回调函数返回的结果会作为下一个then()回调函数的参数
 - then()的回调函数可能也会返回一个**promise实例**(替代了then()返回的promise实例)，那么下一个then()的回调函数会等待该promise实例的状态变化才执行
 ```javascript
@@ -1268,6 +1357,7 @@ Promise.resolve("hello").then(function(post) {
 ```
 ## Promise.prototype.catch()
 - catch()是then(null,failureCallback)的简写，也会返回一个**全新promise实例**
+    - catch()本质就是then()函数，返回的promise状态参见上文
 - promise内部抛出的错误未被捕获不会影响外面的代码执行(promise会吃掉错误),建议在promise后面加一个catch()用于捕获错误
 
 示例：区别setTimeout异步操作和其他异步操作的执行顺序
@@ -1369,6 +1459,13 @@ const p=Promise.reject(thenable);
 p.catch(reason=>{console.log(reason)});
 // reason===thenable ==>true
 ```
+## Node.js中打印promise实例
+- node.js环境中打印promise实例的三种状态
+    - Promise{<pending>}
+    - Promise{<rejected> msg}
+    - Promise{msg},resolve状态的promise直接显示promise实例携带的信息
+
+-----
 ## AJAX(Asynchronous JavaScript And XML)
 概念：  
 > AJAX是异步的JavaScript和XML（Asynchronous JavaScript And XML）。简单点说，就是使用 XMLHttpRequest 对象与服务器通信。 它可以使用JSON，XML，HTML和text文本等格式发送和接收数据
@@ -1470,6 +1567,118 @@ newObj.b.c.a.x;
 [参考深拷贝](https://juejin.im/book/5bdc715fe51d454e755f75ef/section/5bed40d951882545f73004f6)
 
 ---
+## Set,WeakSet和Map,WeakMap
+### Set
+- Set是ES6新增的一个数据结构(typeof === 'object')，类似数组，区别是成员的值都是唯一的。使用方法`new Set()` 
+- `Set()`参数接收一个具有iterable接口的数据结构，数组去重的最简单方法`[...new Set([1,2,2,3])]`
+- 向Set()内部加入值时不会发送类型转化，内部采用`Same-value-zero equality`算法，类似`===`，区别在于认为`NaN`自身相等
+- `Set`的数据结构没有键名，只有键值(或者说键名和键值是一样的),所以`keys()`和`values()`行为完全一致
+- `Set`的`keys()`,`values()`,`entries()`返回的是遍历器对象
+- `Set`默认遍历生成函数就是`Set.prototype.value`，即`Set.prototype[Symbol.iterator] === Set.prototype.value`
+- 使用`Set`可以很容易的实现并集(Union),交集(Intersect),差集(Difference),例如：
+```javascript
+let a = new Set([1,2,3]);
+let b = new Set([4,3,2]);
+// 并集
+new Set([...a,...b]) // Set{1,2,3,4}
+// 交集
+new Set([...a].filter( x => b.has(x))) // Set{2,3}
+// 差集(a 相对于 b的差集)
+new Set([...a].filter( x => !b.has(x))) // Set{1}
+```
+- 想在遍历操作中同步改变`Set`数据结构，目前没有直接的方法，可以通过映射一个新的`Set`数据结构，然后赋值给原来的`Set`,或者通过`Array.formF(arrayLike[,mapFn[,thisArg])`，例如：
+```javascript
+// 方法一
+let set = new Set([1,2,3]);
+set = new Set([...set].map( x => x * 2)); // Set{2,4,6}
+// 方法二
+let set = new Set([1,2,3]);
+set = new Set(Array.from(set, x => x *2)); // Set{2,4,6}
+```
+## WeakSet
+- `WeakSet`与`Set`类似，成员值不重复，但是有两点区别
+    1. `WeakSet`的成员值只能是对象，不能是其他数据类型
+    2. `Set`中对象引用是强类型化的，`WeakSet`中对象是弱引用，即`WeakSet`不能包含无引用的对象，否则会自动清除集合(垃圾回收机制)
+## Map
+- `Map`是一种比`Object`结构更完整的Hash结构(键值对结构),它允许键名可以是基本类型和引用类型
+- `Map`构造函数可以接受一个具有`Iterable`接口，且每个成员是一个双元素的数组的数据结构，意味着，`Set`和`Map`都可以用来生成新的`Map`，例如：
+```javascript
+// 二维数组的参数
+let m = new Map([['name','allen'],['age','18']])
+m.get(name) // allen
+// Set作为参数
+let s1 = new Set([[0,1],['0',2]]);
+let m1 = new Map(s1)
+m1.get(0) // 1
+m1.get('0') // 2
+// Map作为参数
+let m2 = new Map([['foo',1],['baz',2]]);
+let map = new Map(m2);
+map.get('foo') // 1
+```
+- `Map`对同一个键的多次赋值，后面的会覆盖前面的
+    > **特别注意，只有对同一个对象的引用，Map才会视为同一个键**
+- `Map`默认遍历生成函数就是`Map.prototype.entries`，即`Map.prototype[Symbol.iterator] === Map.prototype.entries`
+- `Map`与几种数据结构互换的例子：
+```javascript
+// Map 转为 数组
+let mapToArr = new Map([['foo',1],['baz',2]]);
+[...m1] // [['foo',1],['baz',2]]
+[...m1.entries()] // [['foo',1],['baz',2]]
+// 数组 转为 Map
+new Map([['foo',1],['baz',2]]) // Map{'foo'=>1,'baz'=>2}
+
+// Map 转为 对象
+function strmapToObj(strMap){
+    let obj = Object.create(null);
+    for(let [key,value] of strMap.entries()){
+        obj[key] = value;
+    }
+    return obj;
+}
+let mapToObj = new Map().set('foo',1).set('baz',2);
+strmapToObj(mapToObj); // {'foo',1,'baz',2}，如果Map的键名不是字符串，转为的obj的键名会转为字符串
+// 对象 转为 Map
+// 方法一
+let obj = {"a":1, "b":2};
+new Map(Object.entries(obj)); // Map{'a'=>1,'b'=>2}
+// 方法二，手写转换函数
+function objToStrmap(obj){
+    let map = new Map();
+    for (let [key,value] of Object.entries(obj)){
+        map.set(key,value);
+    }
+    return map;
+}
+objToStrmap(obj); // Map{'a'=>1,'b'=>2'}
+
+// Map 转为 JSON
+function mapToJson(map){ // Map的键名都为字符串的情况，转为对象JSON
+    return JSON.stringify(strmapToObj(map)); // 使用了上面封装的strmapToObj()函数
+}
+let myMap = new Map().set('yes', true).set('no', false);
+mapToJson(myMap); // '{"yes":true,"no":false}'
+
+function mapToArrJson(map){ // Map的键名有其他类型，可以转为数组JSON
+    return JSON.stringify([...map]);
+}
+let myMap = new Map().set(true, 7).set({foo: 3}, ['abc']);
+mapToArrJson(myMap); // '[[true,7],[{"foo":3},"abc"]]'
+// JSON 转为 Map
+function jsonToStrmap(json){ // 正常情况下，对象JSON转为Map,键名全部为字符串
+    return objToStrmap(JSON.parse(json)); // 使用了上面封装的objToStrmap()函数
+}
+let json = '{"yes":true,"no":false}'
+jsonToStrmap(json); // Map{'yes'=>true,'no'=>false}
+
+function jsonToMap(json){ // 特殊情况，如果是数组JSON
+    return new Map(JSON.parse(json));
+}
+let json = '[[true,7],[{"foo":3},"abc"]]'
+jsonToMap(json); // Map{true=>7,{"foo":3}=>"abc"}
+```
+---
+
 ## Array.prototype的方法
 ### Array.prototype方法的返回值的几种情况
 1. 返回新数组:
@@ -1528,8 +1737,77 @@ Array.prototype.filter(callback(currentVal[,index[,array]]){
 ```javascript
 Array.prototype.reduce(callback(accumulator,currentVal[,index[,array]]){}[,initialVal])
 ```
+## 函数扩展
+- 函数参数的默认值只有在参数严格等于`undefined`时才会起作用，同理结构赋值的默认值也是如此
+- 参数默认值最好放在参数尾部，放在其他位置也不会出错，但是就无法省略该参数，只有显示设置`undefined`,例如：
+```javascript
+function f(x, y = 5, z) {
+  return [x, y, z];
+}
+f() // [undefined, 5, undefined]
+f(1) // [1, 5, undefined]
+f(1, ,2) // 报错
+f(1, undefined, 2) // [1, 5, 2]
+```
+- 函数声明参数变量后，不能在函数体内再次用`let`,`const`声明(会报已经声明的错误),**但是可以用var再次声明，此时var声明的变量和参数变量不是同一个变量，在函数体内直接访问该变量是访问var声明的变量**
+- 函数对象的`length`属性指该函数有多少个必须要传入的参数，即形参的个数。**形参的数量不包括剩余参数个数，仅包括第一个具有默认值之前的参数个数。**与之对比的是，arguments.length 是函数被调用时实际传参的个数
+- ECMAScript中所有函数的参数都是按值传递的，以下证明对象传参也是按值传递的
+```javascript
+function setName(obj) {
+ obj.name = "Nicholas";
+ obj = new Object();
+ obj.name = "Greg";
+}
+var person = new Object();
+setName(person);
+alert(person.name); //"Nicholas" 
+```
+    > 如果person是直接把堆中的对象传给obj，那么最终person.name为"Greg"。在ECMAScript中不能直接操作堆中的对象，都是通过对象的引用指针来操作，因此在该例中，obj和person变量存储都是引用地址，指向堆中的同一个对象
+## 关于for(),while(),if(),function()的圆括号
+- for循环的循环条件会形成一个父级作用域，循环体是一个子级作用域，例如：
+```javascript
+for(let i=0;i<3;i++){
+    let i=1; // 不会报错
+}
+```
+- while和if圆括号里是条件表达式，不能声明变量，并且会把函数转化，不再是一个函数
+```javascript
+if(function f(){}){
+    f(); // 报错,f is not a function
+}
+while(function f(){}){
+    f(); // 报错,f is not a function
+}
+```
 ---
-# DOM基础知识
+# BOM和DOM基础知识
+## BOM
+- 抛开全局变量会成为 window 对象的属性不谈，定义全局变量与在 window 对象上直接定义属性还是有一点差别：全局变量不能通过`delete`操作符删除，而直接在 window 对象上的定义的属性可以。(全局变量let,const不会成为window对象的属性)
+## 常用的Web API接口
+Element.clientHeiht:  
+- 只读属性。对于没有定义CSS或者内联布局盒子的元素为0，否则，它是元素内部的高度(单位像素)，包含内边距，但不包括水平滚动条、边框和外边距。
+> 此属性会将获取的值四舍五入取整数。 如果你需要小数结果, 请使用`element.getBoundingClientRect()`，但是`element.getBoundingClientRect()`只能获取元素的`width / height`，但是这个值是`offsetWidth / offsetHeight` ，**包括边框的长度**，所以不能获取clientWidth / clientHeight
+- `document.documentElement.clientHeight`表示浏览器可视区域的高度
+- `Element.clientWidth`类似`Element.clientHeight`
+
+Element.offsetHeight:  
+- 只读属性。元素的`offsetHeight`是一种元素CSS高度的衡量标准，包括元素的边框、内边距和元素的水平滚动条（如果存在且渲染的话），不包含:before或:after等伪类元素的高度。
+
+HTMLElement.offsetParent :  
+- 是一个只读属性，返回一个指向最近的（指包含层级上的最近）包含该元素的定位元素或者最近的 table,td,th,body元素。当元素的 style.display 设置为 "none" 时，offsetParent 返回 null。offsetParent 很有用，因为`offsetTop`和`offsetLeft`都是相对于其内边距边界的。
+
+Element.scrollHeight:  
+- 这个只读属性是一个**元素内容**高度的度量，包括由于溢出导致的视图中不可见内容。没有垂直滚动条的情况下，scrollHeight值与元素视图填充所有内容所需要的最小值clientHeight相同。包括元素的padding，但不包括元素的border和margin。scrollHeight也包括 ::before 和 ::after这样的伪元素。scrollWidth同理。
+![scrollHeight示例](https://developer.mozilla.org/@api/deki/files/840/=ScrollHeight.png)
+
+Element.scrollTop:
+- `Element.scrollTop`属性可以获取或设置一个元素的内容垂直滚动的像素数。一个元素的`scrollTop`值是这个元素的顶部(不包括border)到视口可见内容（的顶部）的距离的度量。当一个元素的内容没有产生垂直方向的滚动条，那么它的 scrollTop 值为0。
+- scrollTop 可以被设置为任何整数值，同时注意：
+    - 如果一个元素不能被滚动（例如，它没有溢出，或者这个元素有一个"non-scrollable"属性），scrollTop将被设置为0。
+    - 设置scrollTop的值小于0，scrollTop 被设为0
+    - 如果设置了超出这个容器可滚动的值, scrollTop 会被设为最大值.
+- `Element.scrollLeft`同`Element.scrollTop`类似  
+![scrollTop示例](https://developer.mozilla.org/@api/deki/files/842/=ScrollTop.png)
 ## DOM事件流
 结论：  
 > 下面例子的js代码对应的html
